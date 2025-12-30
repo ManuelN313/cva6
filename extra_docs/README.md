@@ -47,13 +47,12 @@ Reemplazar `<user_name>` por el nombre de usuario de la PC (se puede obtener cor
 sudo groupadd docker
 sudo usermod -aG docker <user_name>
 newgrp docker
-ls -l /var/run/docker.sock
 ```
 
-Al finalizar debería aparecer lo siguiente:
+Luego corre el siguiente comando, el cual no deberia pedirte `sudo`:
 
 ```bash
-srw-rw---- 1 root docker 0 <date> /var/run/docker.sock
+docker run hello-world
 ```
 
 #### Acceder al contenido del contenedor desde VSCode
@@ -237,14 +236,10 @@ gcc -Wall -Wextra -O3 -g -std=c99 -o <executable_name> <program_name>
 
 A la hora de escribir programas en C tener en cuenta lo siguiente:
 - Solo estan disponibles las librerías `stdio.h`, `stdint.h` y `string.h`.
-- No se pueden imprimir `floats` ni `doubles`.
 - No se pueden usar las funciones `malloc` ni `free`.
 
 Si se usa el simulador `veri-testharness`, se debe tener en cuenta que:
 - El procesador solo puede correr por 2 millones de ciclos o 500 segundos, lo que ocurra primero.
-
-Si se usa el simulador `spike`, se debe tener en cuenta que:
-- No se generan archivos `.vcd` para visualizar las señales.
 
 ## Crear Imagen Docker
 
@@ -278,6 +273,97 @@ Verificar que la imagen se haya creado correctamente:
 docker images
 ```
 
-## Crear Proyecto en Vivado
+## Vivado
+
+### Instalación
+
+Ingresar al siguiente [link](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/2024-2.html) y descargar la versión 2024.2 de Vivado para Linux. Para poder acceder al link debe crearse una cuenta de AMD.
+
+![vivado download](image-0.png)
+
+Una vez descargado el instalador, darle permisos de ejecución y correrlo.
+
+```bash
+chmod +x FPGAs_AdaptiveSoCs_Unified_2024.2_1113_1001_Lin64.bin
+./FPGAs_AdaptiveSoCs_Unified_2024.2_1113_1001_Lin64.bin
+```
+
+Luego de esto se abrira el instalador y se le pedira su cuenta AMD. Una vez hecho esto, tiene que seleccionar el producto a instalar que en nuestro caso es `Vivado`:
+
+![select vivado](image-1.png)
+
+Después, seleccionar la versión `Vivado ML Enterprise`:
+
+![select vivado ml enterprise](image-2.png)
+
+A continuación tildar las siguientes opciones de instalación:
+
+![options vivado](image-3.png)
+
+Aceptar los terminos de licencia:
+
+![license vivado](image-4.png)
+
+Elegir una carpeta para la instalación:
+
+![directory vivado](image-5.png)
+
+Y por último presionar instalar:
+
+![final step vivado](image-6.png)
+
+### Activar Licencia
 
 (TODO)
+
+### Crear proyecto
+
+Primero clonar el siguiente repositorio:
+
+```bash
+git clone https://github.com/ManuelN313/cva6.git
+cd cva6
+```
+
+Luego correr lo siguiente para instalar unas librerías necesarias:
+
+```bash
+sudo apt-get install autoconf automake autotools-dev curl git libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool bc zlib1g-dev
+```
+
+Después crear un directorio en la raíz del repositorio que se llama `tools`. Luego ubicarse en a `cva6/util/toolchain-builder/` y ejecutar los siguientes comandos:
+
+```bash
+export NUM_JOBS=8 #Esto sería para acelerar el proceso. Colocar un número que su hardware soporte
+export INSTALL_DIR=/absolute/path/to/cva6/tools
+bash get-toolchain.sh #Demora un tiempo
+bash build-toolchain.sh $INSTALL_DIR #También tarda un tiempo
+```
+Luego de crearse el toolchain, volver a la raíz del proyecto e instalar `cmake`:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y software-properties-common lsb-release gnupg
+sudo apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
+sudo add-apt-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+sudo apt-key adv --fetch-keys https://apt.kitware.com/keys/kitware-archive-latest.asc
+sudo add-apt-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+```
+
+Luego instalar los paquetes `help2man` y `device-tree-compiler`:
+
+```bash
+sudo apt-get install help2man device-tree-compiler
+```
+
+Y por último ejecutar el siguiente comando:
+
+```bash
+make fpga BOARD="vc707" 
+```
+
+En el caso que salté un error de que no se encuentra el comando `vivado`, ir a `path/to/Vivado/2024.2/` y ejecutar:
+
+```bash
+source settings64.sh
+```
