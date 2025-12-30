@@ -80,7 +80,7 @@ else ifeq ($(BOARD), kc705)
 	CLK_PERIOD_NS            := 20
 else ifeq ($(BOARD), vc707)
 	XILINX_PART              := xc7vx485tffg1761-2
-	XILINX_BOARD             := xilinx.com:vc707:part0:1.3
+	XILINX_BOARD             := xilinx.com:vc707:part0:1.4
 	CLK_PERIOD_NS            := 20
 else ifeq ($(BOARD), nexys_video)
 	XILINX_PART              := xc7a200tsbg484-1
