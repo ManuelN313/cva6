@@ -5,7 +5,10 @@
 - Delfi tiene acceso a varios papers.
 - No funciona la teoria de Gonza con el Makefile. Olvidarse de Vivado por un tiempo.
 - Tratar de obtener metricas para Spike y Verilator. Ya sean con los [performance counters](https://docs.openhwgroup.org/projects/cva6-user-manual/01_cva6_user/CSR_Performance_Counters.html) o con acceder directamente a los [registros csrs](https://docs.openhwgroup.org/projects/cva6-user-manual/06_cv64a6_mmu/riscv/priv.html#priv-csrs) (cabe aclarar que esto es para cv64a6_mmu y no cv64a6_imafdc_sv39).
-- Crear una configuracion de CVA6 lo mas realista para Gem5.
+- Crear una configuracion de CVA6 lo mas realista para Gem5:
+  - Fijarse que gem5 activa la cache l2 por defecto, para desactivarla.
+  - Correr un código para ver cuantas instrucciones tarda gem5 en preparar todo. Configurar el m5_dump_stat
+  - Subir el archivo de configuración de gem5 y hacer un excel comparando las demás caracteristicas (implementadas vs no implementadas)
 - Hacer comparaciones entre los simuladores y Gem5:
   - Empezar con programas basicos como solo aritmetica de enteros, luego punto flotantes y despues ciclos y por ultimo lectura y escritura de memoria. Y al final mezclar un poco de todo. Documentar exhaustivamente:
     - Indicar que programa estamos corriendo (ya sea de C o assembly).
@@ -15,7 +18,7 @@
   - Hacer una comparacion entre las metricas y llegar a alguna conclusion.
   - Usar la informacion dada por los simuladores para ir cambiando la configuracion del Gem5.
 
-## Notas 19/12 a 05/01
+## Notas 19/12 a 08/01
 
 - Esta [seccion](https://docs.openhwgroup.org/projects/cva6-user-manual/01_cva6_user/Parameters_Configuration.html) contiene una explicacion de los parametros y configuraciones del procesador, la cual son especialemente util para los simuladores. 
 - Tenemos que `RVS` determina si se estamos en modo 
@@ -33,8 +36,18 @@ supervisor y `RVU` determina si estamos en modo usuario. Ambos estan activados e
 - En Verilator, el tiempo de ejecucion de un programa lo estoy calculando a partir del numero de ciclos.
 - En el este [paper](https://drive.google.com/drive/folders/1s2qMsnOHyl_ZMiDC9w0L0egYJkCIUeK_) hay una seccion que muestra como configuraron a gem5 para que sea parecido a CVA6 y nos dice que la Line Width es de 128 Bytes.
 - Fran puede utilizar los simuladores para verificar si su Alu esta funcionando correctamente.
+- En gem5 estas son las siguientes metricas que nos interesan (y en Verilator):
+  - simSeconds (Segundos)
+  - board.processor.cores.core.numCycles (Numero de Ciclos)
+  - board.processor.cores.core.commitStats0.numInsts (Numero de Instrucciones)
+  - board.processor.cores.core.ipc (IPC)
+  - board.cache_hierarchy.l1icaches.overallAccesses::total (Accesos I Cache)
+  - board.cache_hierarchy.l1icaches.overallMisses::total (Miss de I Cache)
+  - board.cache_hierarchy.l1dcaches.overallAccesses::total (Accesos D Cache)
+  - board.cache_hierarchy.l1dcaches.overallMisses::total (Miss de D Cache)
+  - board.processor.cores.core.branchPred.lookups_0::total (Branch Predict)
+  - board.processor.cores.core.branchPred.mispredicted_0::total (Branch Mispredicts)
  
-
 ### Analisis de Rendimiento en Verilator: Implementacion en C
 
 Este analisis evalua el desempeno de un bucle con logica condicional (`modulo`) y una variable volatil.
@@ -219,7 +232,7 @@ stack_top:
 | **I-Cache Access** | x22 | 195759 | 231586 | +18.3% |
 | **D-Cache Access** | x23 | 56579 | 56579 | 0 (Carga de trabajo igual) |
 | **Branches** | x24 | 60050 | 60050 | 0 |
-| **Branch Miss** | x25 | 204 | 204 | 0 |
+| **Branch Mispredicts** | x25 | 204 | 204 | 0 |
 | **Tiempo (us)** | x26 | 4669 | 7524 | +61.1% |
 | **IPC** | Calc | **0.7711** | **0.4785** | **-38%** (Caida de eficiencia) |
 
@@ -251,7 +264,7 @@ La consecuencia directa de los fallos de cache es que el procesador debe detener
 | **I-Cache Access** | 195759 | 182950 | 231586 | 233005 |
 | **D-Cache Access** | 56579 | 80961 | 56579 | 80961 |
 | **Branches** | 60050 | 60050 | 60050 | 60050 |
-| **Branch Miss** | 204 | 204 | 204 | 204 |
+| **Branch Mispredicts** | 204 | 204 | 204 | 204 |
 | **Tiempo (us)** | 4669 | 5174 | 7524 | 8201 |
 | **IPC** | 0.7711 | 0.6958 | 0.4785 | 0.4390 |
 
@@ -290,7 +303,38 @@ int main() {
 | **I-Cache Access** | 951712 | 913357 | 953218 | 968336 |
 | **D-Cache Access** | 270936 | 438822 | **268633** | 348830 |
 | **Branches** | 10272 | 10272 | 10272 | 10272 |
-| **Branch Miss** | 13 | 13 | 13 | 13 |
+| **Branch Mispredicts** | 13 | 13 | 13 | 13 |
 | **Tiempo (us)** | 28397 | 32718 | **28357** | 31127 |
 | **IPC** | 0.7141 | 0.6198 | **0.7151** | 0.6515 |
 
+## Reunion 08/01
+
+- Ver si los resultados son determinísticos (probar algunas veces el mismo código).
+- Usar aling para que el código arranque siempre en el mismo lugar.
+- Restar el offset inicial de num de instrucciones para calcular el IPC y que sea más comparable Verilator con Gem5.
+- Ver qué latencia está asignando Verilator a los accesos a Mem ppal ante un miss de caché.
+- Buscar qué versión de CVA6 que usaron en la tesis de Morillas y ver si hay diferencias con la que estamos usando actualmente.
+- Hacer un objet dump para saber dónde está el código que se está ejecutando.
+- Hacer un for de pocas instrucciones (que entren en una línea de caché, si da fallos agregar NOPs antes para que se ejecute sin miss de caché) y que ejecute unas muchas iteraciones (probar distintas cantidades). Ojo con el uso de inmediatos, que puede hacer cosas raras.
+- Leer Tesis Morillas para entender que cambios realizo. Luego tocar valores que tengan sentido
+- Probar los benchmarks de Morillas 
+- Contactar Morillas
+
+## Notas 08/01 a 15/01
+
+- Un dato importante a tener en cuenta es que estoy compilando los programas de Verilator de manera distinta a los de gem5. No creo que esto provoque una gran diferencia en las metricas pues solamente estoy comparando una seccion particular de codigo. En caso de necesitarlas a futuro asi es mas o menos como se compilan los programas:
+
+- Compilacion de Verilator para RISCV y C:
+```bash
+/tools/bin/riscv-none-elf-gcc programa.S -I/cva6/verif/sim/dv/user_extension /config/gen_from_riscv_config/linker/link.ld -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -g verif/tests/custom/common/syscalls.c verif/tests/custom/common/crt.S -lgcc -I../tests/custom/env -I../tests/custom/common -o programa.o march=rv64gc_zba_zbb_zbs_zbc_zbkb_zbkx_zkne_zknd_zknh -mabi=lp64d
+```
+
+- Compilacion de gem5 para RISCV:
+```bash
+riscv64-linux-gnu-gcc programa.S gem5/util/m5/src/abi/riscv/m5op.S -static -nostdlib gem5/include -o programa
+```
+
+- Compilacion de gem5 para C:
+```bash
+riscv64-linux-gnu-gcc programa.c gem5/util/m5/src/abi/riscv/m5op.S -static -nostdlib -fno-builtin -e main gem5/include -lgcc -o programa
+```
