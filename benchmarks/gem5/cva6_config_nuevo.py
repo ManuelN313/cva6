@@ -79,16 +79,22 @@ class CVA6FUPool(MinorFUPool):
             opLat=3, issueLat=1
         )
 
-        fp_slow_ops = ['FloatCvt', 'FloatSqrt', 'FloatDiv']
+        fp_slow_ops = ['FloatCvt', 'FloatSqrt']
         fp_slow = MinorFU(
             opClasses=make_op_class_set(fp_slow_ops),
-            opLat=4, issueLat=4 
+            opLat=4, issueLat=1 
         )
         
+        fp_div_ops = ['FloatDiv']
+        fp_div = MinorFU(
+            opClasses=make_op_class_set(fp_div_ops),
+            opLat=4, issueLat=4 
+        )
+
         fp_cmp_ops = ['FloatCmp']
         fp_cmp = MinorFU(
             opClasses=make_op_class_set(fp_cmp_ops),
-            opLat=2, issueLat=1
+            opLat=5, issueLat=1
         )
         
         # Memoria
@@ -100,8 +106,8 @@ class CVA6FUPool(MinorFUPool):
 
         # Resto de Unidades
         # Juntamos todas las que ya definimos
-        defined_ops = set(int_alu_ops + int_mul_ops + int_div_ops + 
-                          fp_fast_ops + fp_slow_ops + fp_cmp_ops + mem_ops)
+        defined_ops = set(int_alu_ops + int_mul_ops + int_div_ops + fp_fast_ops
+                        + fp_slow_ops + fp_div_ops + fp_cmp_ops + mem_ops)
         
         misc_ops_list = ['IprAccess'] 
         
@@ -121,7 +127,7 @@ class CVA6FUPool(MinorFUPool):
 
         self.funcUnits = [
             int_alu, int_mul, int_div, 
-            fp_fast, fp_slow, fp_cmp,
+            fp_fast, fp_slow, fp_div, fp_cmp,
             mem_fu, misc_fu, catch_all_fu
         ]
 
@@ -164,8 +170,8 @@ class CVA6CPU(RiscvMinorCPU):
         
         self.branchPred = LocalBP(
             localPredictorSize = 1024,
-            localCtrBits = 2,
-            instShiftAmt = 2  # BHT Instruction Shift Amount
+            localCtrBits = 2, # BHT localCtrBits ?
+            instShiftAmt = 2  # BHT Instruction Shift Amount ?
         )
 
         self.branchPred.btb = SimpleBTB(
@@ -197,17 +203,25 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
         super().incorporate_cache(board)
 
         for i, core in enumerate(board.get_processor().get_cores()):
+            self.l1icaches[i].assoc = 4
             self.l1icaches[i].tag_latency = 1
             self.l1icaches[i].data_latency = 2
             self.l1icaches[i].response_latency = 2
-            self.l1icaches[i].mshrs = 2
-            self.l1icaches[i].assoc = 4
+            self.l1icaches[i].mshrs = 4
+            self.l1icaches[i].tgts_per_mshr = 1
+            self.l1icaches[i].is_read_only = True
+            self.l1icaches[i].writeback_clean = True
 
+            self.l1dcaches[i].assoc = 8
             self.l1dcaches[i].tag_latency = 1
             self.l1dcaches[i].data_latency = 2
             self.l1dcaches[i].response_latency = 2
-            self.l1icaches[i].mshrs = 4
-            self.l1dcaches[i].assoc = 8
+            self.l1dcaches[i].mshrs = 2
+            self.l1dcaches[i].tgts_per_mshr = 1
+            self.l1dcaches[i].write_buffers = 8
+            self.l1dcaches[i].is_read_only = False
+            self.l1dcaches[i].writeback_clean = True
+
 
 # -------------------------------------------------------------------------
 # Script Principal
