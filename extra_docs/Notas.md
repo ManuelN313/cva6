@@ -309,16 +309,17 @@ int main() {
 
 ## Reunion 08/01
 
-- Ver si los resultados son determinísticos (probar algunas veces el mismo código).
+- Ver si los resultados son determinísticos (probar algunas veces el mismo código). 
 - Usar aling para que el código arranque siempre en el mismo lugar.
 - Restar el offset inicial de num de instrucciones para calcular el IPC y que sea más comparable Verilator con Gem5.
-- Ver qué latencia está asignando Verilator a los accesos a Mem ppal ante un miss de caché.
-- Buscar qué versión de CVA6 que usaron en la tesis de Morillas y ver si hay diferencias con la que estamos usando actualmente.
-- Hacer un objet dump para saber dónde está el código que se está ejecutando.
 - Hacer un for de pocas instrucciones (que entren en una línea de caché, si da fallos agregar NOPs antes para que se ejecute sin miss de caché) y que ejecute unas muchas iteraciones (probar distintas cantidades). Ojo con el uso de inmediatos, que puede hacer cosas raras.
-- Leer Tesis Morillas para entender que cambios realizo. Luego tocar valores que tengan sentido
-- Probar los benchmarks de Morillas 
-- Contactar Morillas
+- Leer Tesis Morillas para entender que cambios realizo
+- Buscar qué versión de CVA6 que usaron en la tesis de Morillas y ver si hay diferencias con la que estamos usando actualmente. En el caso de no encontrar, contactar con Morillas
+
+
+- Probar los benchmarks de Morillas
+- Ver qué latencia está asignando Verilator a los accesos a Mem ppal ante un miss de caché.
+- Hacer un objet dump para saber dónde está el código que se está ejecutando (Consultar Gonza)
 
 ## Notas 08/01 a 15/01
 
@@ -338,3 +339,39 @@ riscv64-linux-gnu-gcc programa.S gem5/util/m5/src/abi/riscv/m5op.S -static -nost
 ```bash
 riscv64-linux-gnu-gcc programa.c gem5/util/m5/src/abi/riscv/m5op.S -static -nostdlib -fno-builtin -e main gem5/include -lgcc -o programa
 ```
+
+### Tesis de Morillas
+
+- Usaron git para el proyecto, asi que la configuracion final que ellos crearon debe estar ahi (y capaz el bitstream)
+- Usaron un compilador gcc de static link para evitar problemas de configuracion
+- Tener en cuenta que el gem5 lo configuraron para que funcione con una imagen de Linux Ubuntu o sea que los benchmarks corren en FS y no FE
+- En la siguiente tabla podemos ver que las tareas T3 a T6 son las que nos interesan conocer cuando se hicieron. Pues nos permitirian saber con que version del CVA6 estuvieron trabajando 
+
+![tasks](image-7.png)
+
+- Tomando en cuenta la agenda propuesta, podemos deducir que la version de CVA6 que utilizaron debe ser del alrededor de abril del 2025.
+
+![schedule](image-8.png)
+
+- Utilizan la Diligent Genesys 2 como FPGA. Tiene como memoria 1 GB DDR3 SODIMM
+- Utilizan la configuracion cv64a6_imafdc_sv39_config_pkg.sv
+- Utilizan MinorCPU para modelo en gem5
+- CVA6 tiene 6 etapas mientras que MinorCPU tiene 4. Por lo tanto, para compensar incrementaron la ejecucion de todas las instrucciones en 2 ciclos (en gem5).
+- Ambos tienen un sistema de scoreboard parecido
+- En el CVA6 tenemos que la mayoria de operaciones tiene latencias fijas, pero algunas como la division pueden tardar entre 2 a 64 ciclos. El problema con esto es que en gem5 todas las latencias son fijas.
+- Usan gem5.fast para correr las simulaciones
+- La memoria de gem5 que mas se acerca a la de la Genesys 2 es la SingleChannelDDR3_1600 con 1GB
+- La unica metrica que pudieron obtener de la fpga eran el numero de ciclos y instrucciones ejecutadas
+- En gem5, un bloque de cache es de 64B mientras que en CVA6 es de 128B. Pero segun ellos, usar la cache de 64B en gem5 deberia causar minimos problemas
+- Entre la pagina 55 y 59 se encuentran gran parte de las explicaciones de los valores de los parametros
+- No entiendo muy bien la explicacion del branchpredictor (consultar a los profes)
+
+
+# Notas 
+
+- Tratar de cambiar el cache line size de gem5 de 64 a 128
+- Identificar la latencia la memoria ram de Verilator
+- Agregar en la tabla de Inicial VS Nuevo, los parametros de Verilator que encuentres (poner de donde lo encontraste)
+- Analizar el procesamiento de instrucciones del CVA6 (seguir el camino de las instruccionesm, como y cuantas se ejecutan)
+- Verificar las latencias de las unidades funcionales 
+- Juntarse con Gonza para ver lo del object dump en makefile de Verilator
