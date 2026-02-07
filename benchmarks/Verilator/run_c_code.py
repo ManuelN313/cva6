@@ -20,7 +20,7 @@ OVERHEAD_CONSTANTS = {
     'x23': 24,   # D-Cache Access
     'x24': 0,    # Branches
     'x25': 0,    # Branch Mispredicts
-    'x26': 3.0   # Tiempo (us)
+    'x26': 3     # Tiempo (us)
 }
 
 # ==============================================================================
@@ -40,8 +40,75 @@ METRICS_MAP = {
 
 ORDERED_KEYS = ['x18', 'x19', 'x20', 'x21', 'x22', 'x23', 'x24', 'x25', 'x26']
 
+def generate_and_show_codelist(binary_path):
+    """
+    Genera el archivo .list usando objdump y muestra la sección de CODIGO filtrada.
+    """
+    if not os.path.exists(binary_path):
+        print(f"[!] No se encontro el binario para desmontar: {binary_path}")
+        print(f"    (Verifique si la compilación fue exitosa y la ruta es correcta)")
+        return
+
+    list_path = os.path.splitext(binary_path)[0] + ".list"
+    
+    cmd = f"riscv64-linux-gnu-objdump -d -S -l {binary_path}"
+    
+    print(f"\n[INFO] Generando disassembly en: {list_path}")
+    try:
+        with open(list_path, "w") as f:
+            subprocess.run(shlex.split(cmd), stdout=f, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Error ejecutando objdump: {e}")
+        return
+    except FileNotFoundError:
+        print("[!] Error: No se encontro 'riscv64-linux-gnu-objdump'. Verifique su toolchain.")
+        return
+
+    # Visualización Filtrada
+    print("\n" + "="*70)
+    print("CODIGO DESENSAMBLADO")
+    print("="*70)
+
+    start_pattern = "// Codigo"
+    end_pattern = "// Lectura Final"
+    
+    printing = False
+    found_any = False
+
+    try:
+        with open(list_path, "r") as f:
+            lines = f.readlines()
+            
+        for line in lines:
+            if end_pattern in line:
+                printing = False
+                break 
+
+            if start_pattern in line:
+                printing = True
+                found_any = True
+                continue 
+
+            if printing:
+                if line.strip().startswith('/'):
+                    if "(discriminator" in line:
+                        print(line, end='')
+                        continue
+                    else:
+                        continue
+
+                print(line, end='')
+
+        if not found_any:
+            print("[WARN] No se encontraron las etiquetas '// Codigo' en el .list")
+
+    except Exception as e:
+        print(f"[!] Error leyendo .list: {e}")
+
+    print("=" * 70 + "\n")
+
 def main():
-    # Configuración de Directorios
+    # Configuracion de Directorios
     cva6_root = "/cva6"
     sim_dir = os.path.join(cva6_root, "verif/sim")
     setup_script = os.path.join(sim_dir, "setup-env.sh")
@@ -57,7 +124,7 @@ def main():
             print(f"[!] Error eliminando work-ver: {e}")
 
     # Parsear Argumentos
-    parser = argparse.ArgumentParser(description="Ejecutar test C en CVA6 y extraer métricas.")
+    parser = argparse.ArgumentParser(description="Ejecutar test C en CVA6 y extraer metricas.")
     parser.add_argument("target", help="Target de la arquitectura (ej: cv64a6_imafdc_sv39)")
     parser.add_argument("c_file", help="Ruta al archivo .c (relativa o absoluta)")
     args = parser.parse_args()
@@ -79,6 +146,9 @@ def main():
     # Limpieza de los Logs
     today = datetime.date.today().strftime("%Y-%m-%d")
     log_dir_prediction = os.path.join(sim_dir, f"out_{today}", "veri-testharness_sim")
+    
+    # Directorio de binarios compilados
+    binary_dir_compilation = os.path.join(sim_dir, f"out_{today}", "directed_tests")
 
     log_main = f"{test_name}.{args.target}.log"
     log_iss  = f"{test_name}.{args.target}.log.iss"
@@ -118,8 +188,17 @@ def main():
             executable='/bin/bash'
         )
     except subprocess.CalledProcessError as e:
-        print(f"\n[!] Error en simulación. Código: {e.returncode}")
+        print(f"\n[!] Error en simulacion. Codigo: {e.returncode}")
 
+    # --------------------------------------------------------------------------
+    # GENERAR Y MOSTRAR CODIGO 
+    # --------------------------------------------------------------------------
+    binary_path = os.path.join(binary_dir_compilation, f"{test_name}.o")
+    generate_and_show_codelist(binary_path)
+
+    # --------------------------------------------------------------------------
+    # PROCESAMIENTO DE LOGS (RESTO DEL CODIGO ORIGINAL)
+    # --------------------------------------------------------------------------
     # Buscar Log
     log_path = os.path.join(log_dir_prediction, log_main)
 

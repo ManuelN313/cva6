@@ -8,6 +8,7 @@ import re
 # ==============================================================================
 GEM5_ROOT = os.getcwd()
 GCC_CMD = "riscv64-linux-gnu-gcc"
+OBJDUMP_CMD = "riscv64-linux-gnu-objdump"
 GEM5_BIN = "./build/RISCV/gem5.opt"
 M5_INCLUDE = os.path.join(GEM5_ROOT, "include")
 M5_OP_ASM = os.path.join(GEM5_ROOT, "util/m5/src/abi/riscv/m5op.S")
@@ -16,11 +17,11 @@ M5_OP_ASM = os.path.join(GEM5_ROOT, "util/m5/src/abi/riscv/m5op.S")
 # CONSTANTES DE OVERHEAD (Configuracion Nueva)
 # ==============================================================================
 OVERHEAD_CONSTANTS = {
-    "numCycles":        37,
+    "numCycles":        47,
     "numInsts":         5,
-    "icache_miss":      0,
+    "icache_miss":      1,
     "dcache_miss":      0,
-    "icache_access":    11,
+    "icache_access":    10,
     "dcache_access":    0,
     "branch_pred":      0,  
     "branch_miss":      0,  
@@ -63,20 +64,20 @@ def compile_asm(asm_file):
     base_name = os.path.splitext(asm_file)[0]
     bin_file = base_name 
 
-    print(f"[1/3] Compilando {asm_file} -> {bin_file}")
+    print(f"[1/4] Compilando {asm_file} -> {bin_file}")
     cmd = [
         GCC_CMD, "-static", "-nostdlib",
         f"-I{M5_INCLUDE}", asm_file, M5_OP_ASM, "-o", bin_file
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print("ERROR DE COMPILACIÓN:\n", result.stderr)
+        print("ERROR DE COMPILACION:\n", result.stderr)
         sys.exit(1)
     return bin_file
 
 def run_gem5(config_file, bin_file):
     out_dir = "resultados"
-    print(f"[2/3] Corriendo simulacion gem5 usando '{config_file}' (Output en {out_dir})...")
+    print(f"[2/4] Corriendo simulacion gem5 usando '{config_file}' (Output en {out_dir})...")
     
     # Limpiar stats anteriores para evitar confusion
     stats_path = os.path.join(out_dir, "stats.txt")
@@ -90,8 +91,38 @@ def run_gem5(config_file, bin_file):
         sys.exit(1)
     return stats_path
 
+def generate_and_show_codelist(bin_file):
+    out_dir = "resultados"
+    list_file = os.path.join(out_dir, "code.list")
+    
+    print(f"[3/4] Generando code.list y visualizando preambulo...")
+    
+    cmd = [OBJDUMP_CMD, "-d", "-S", "-l", bin_file]
+    
+    try:
+        with open(list_file, "w") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+    except subprocess.CalledProcessError as e:
+        print("ERROR AL EJECUTAR OBJDUMP:\n", e)
+        sys.exit(1)
+        
+    print("\n" + "="*70)
+    print(f"PREVISUALIZACION DE {list_file}:")
+    print("="*70)
+    
+    try:
+        with open(list_file, "r") as f:
+            for line in f:
+                print(line, end='')
+                if "jal" in line and "<m5_dump_stats>" in line:
+                    break
+    except FileNotFoundError:
+        print(f"Error: No se pudo leer el archivo generado {list_file}")
+    
+    print("="*70 + "\n")
+
 def parse_stats(stats_path):
-    print("[3/3] Analizando estadisticas")
+    print("[4/4] Analizando estadisticas")
     results = {key: 0.0 for key in METRICS_MAP} 
     
     block_count = 0
@@ -119,7 +150,7 @@ def parse_stats(stats_path):
                                 except ValueError:
                                     pass
     except FileNotFoundError:
-        print("Error: No se encontró stats.txt")
+        print("Error: No se encontro stats.txt")
         sys.exit(1)
 
     # Total Saltos Logicos
@@ -138,9 +169,11 @@ def parse_stats(stats_path):
     return results
 
 def print_table(results):
-    print("\n" + "="*65)
-    print(f"{'MÉTRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
-    print("="*65)
+    print("\n" + "="*70)
+    print(f"TABLA DE RESULTADOS")
+    print("="*70)
+    print(f"{'METRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
+    print("="*70)
     
     keys_order = ["numCycles", "numInsts", 
                   "icache_miss", "dcache_miss",
@@ -178,8 +211,8 @@ def print_table(results):
             val_off_us = val_official * 1_000_000
             val_cor_us = val_corrected * 1_000_000
             
-            fmt_off = f"{val_off_us:.2f}"
-            fmt_cor = f"{val_cor_us:.2f}"
+            fmt_off = f"{int(val_off_us)}"
+            fmt_cor = f"{int(val_cor_us)}"
             
             clean_array_official.append(round(val_off_us))
             clean_array_corrected.append(round(val_cor_us))
@@ -199,7 +232,7 @@ def print_table(results):
             clean_array_corrected.append(int(val_corrected))
             
         print(f"{label:<25} | {fmt_off:>15} | {fmt_cor:>15}")
-    print("="*65 + "\n")
+    print("="*70 + "\n")
 
     print(f"Clean result (OFFICIAL):  {clean_array_official}")
     print(f"Clean result (CORRECTED): {clean_array_corrected}\n")
@@ -223,5 +256,8 @@ if __name__ == "__main__":
         
     binary = compile_asm(asm_file)
     stats_file = run_gem5(config_file, binary)
+    
+    generate_and_show_codelist(binary)
+    
     metrics = parse_stats(stats_file)
     print_table(metrics)

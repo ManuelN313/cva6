@@ -20,7 +20,7 @@ OVERHEAD_CONSTANTS = {
     'x23': 9,    # D-Cache Access
     'x24': 0,    # Branches
     'x25': 0,    # Branch Mispredicts
-    'x26': 0.0   # Tiempo (us)
+    'x26': 0     # Tiempo (us)
 }
 
 # ==============================================================================
@@ -40,6 +40,75 @@ METRICS_MAP = {
 
 ORDERED_KEYS = ['x18', 'x19', 'x20', 'x21', 'x22', 'x23', 'x24', 'x25', 'x26']
 
+def generate_and_show_codelist(binary_path):
+    """
+    Genera el archivo .list usando objdump y muestra la sección de CODIGO filtrada.
+    """
+    if not os.path.exists(binary_path):
+        print(f"[!] No se encontro el binario para desmontar: {binary_path}")
+        print(f"    (Verifique si la compilación fue exitosa y la ruta es correcta)")
+        return
+
+    list_path = os.path.splitext(binary_path)[0] + ".list"
+    
+    cmd = f"riscv64-linux-gnu-objdump -d -S -l {binary_path}"
+    
+    print(f"\n[INFO] Generando disassembly en: {list_path}")
+    try:
+        with open(list_path, "w") as f:
+            subprocess.run(shlex.split(cmd), stdout=f, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Error ejecutando objdump: {e}")
+        return
+    except FileNotFoundError:
+        print("[!] Error: No se encontro 'riscv64-linux-gnu-objdump'. Verifique su toolchain.")
+        return
+
+    # Visualización Filtrada
+    print("\n" + "="*70)
+    print("CODIGO DESENSAMBLADO")
+    print("="*70)
+
+    start_pattern = "# CODIGO"
+    end_pattern = "# SNAPSHOT FINAL Y CÁLCULO DE DIFERENCIAS"
+    
+    printing = False
+    found_any = False
+
+    try:
+        with open(list_path, "r") as f:
+            lines = f.readlines()
+            
+        for line in lines:
+            if end_pattern in line:
+                printing = False
+                break 
+
+            if start_pattern in line:
+                printing = True
+                found_any = True
+                continue 
+
+            if printing:
+                # Filtrar lineas de decoracion
+                if re.search(r'#\s*-{5,}', line):
+                    continue
+                
+                # NUEVO FILTRO: Ignorar lineas que comienzan con rutas de archivo (ej: /cva6/...)
+                if line.strip().startswith('/'):
+                    continue
+
+                print(line, end='')
+
+        if not found_any:
+            print("[WARN] No se encontraron las etiquetas '# CODIGO' en el .list")
+            print("       Asegurate que tu archivo .S use el template correcto.")
+
+    except Exception as e:
+        print(f"[!] Error leyendo .list: {e}")
+
+    print("=" * 70 + "\n")
+
 def main():
     # Configuración de Directorios
     cva6_root = "/cva6"
@@ -57,7 +126,7 @@ def main():
             print(f"[!] Error eliminando work-ver: {e}")
 
     # Parsear Argumentos
-    parser = argparse.ArgumentParser(description="Ejecutar simulación CVA6 y extraer métricas.")
+    parser = argparse.ArgumentParser(description="Ejecutar simulacion CVA6 y extraer metricas.")
     parser.add_argument("target", help="Target de la arquitectura (ej: cv64a6_imafdc_sv39)")
     parser.add_argument("asm_file", help="Ruta al archivo .S o .asm (relativa o absoluta)")
     args = parser.parse_args()
@@ -76,15 +145,20 @@ def main():
     env["PYTHONDONTWRITEBYTECODE"] = "1" 
     env["DV_SIMULATORS"] = "veri-testharness"
 
-    # Limpieza de los Logs
+    # Definicion de rutas de salida
     today = datetime.date.today().strftime("%Y-%m-%d")
+    
+    # Donde se guardan los logs de simulación
     log_dir_prediction = os.path.join(sim_dir, f"out_{today}", "veri-testharness_sim")
+    
+    # Donde se guardan los binarios compilados
+    binary_dir_compilation = os.path.join(sim_dir, f"out_{today}", "directed_tests")
 
     log_main = f"{test_name}.{args.target}.log"
     log_iss  = f"{test_name}.{args.target}.log.iss"
     
+    # Limpieza de logs previos
     files_to_clean = [log_main, log_iss]
-
     for fname in files_to_clean:
         fpath = os.path.join(log_dir_prediction, fname)
         if os.path.exists(fpath):
@@ -118,17 +192,24 @@ def main():
             executable='/bin/bash'
         )
     except subprocess.CalledProcessError as e:
-        print(f"\n[!] Error en simulación. Código: {e.returncode}")
+        print(f"\n[!] Error en simulacion. Codigo: {e.returncode}")
         sys.exit(1)
 
-    # Buscar Log
+    # --------------------------------------------------------------------------
+    # GENERAR Y MOSTRAR CODIGO 
+    # --------------------------------------------------------------------------
+    binary_path = os.path.join(binary_dir_compilation, f"{test_name}.o")
+    generate_and_show_codelist(binary_path)
+
+    # --------------------------------------------------------------------------
+    # PARSEAR METRICAS
+    # --------------------------------------------------------------------------
     log_path = os.path.join(log_dir_prediction, log_main)
 
     if not os.path.exists(log_path):
-        print(f"[!] Log no encontrado: {log_path}")
+        print(f"[!] Log de simulacion no encontrado: {log_path}")
         sys.exit(1)
 
-    # Parsear Log
     final_values = {}
     try:
         with open(log_path, 'r') as f:
@@ -143,9 +224,9 @@ def main():
         sys.exit(1)
 
     # --------------------------------------------------------------------------
-    # CÁLCULOS E IMPRESION
+    # CALCULOS E IMPRESION DE TABLA
     # --------------------------------------------------------------------------
-    print("\n" + "="*70)
+    print("="*70)
     print(f"RESULTADOS DE PERFORMANCE: {test_name}")
     print(f"TARGET: {args.target}")
     print("="*70)

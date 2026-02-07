@@ -8,6 +8,7 @@ import re
 # ==============================================================================
 GEM5_ROOT = os.getcwd()
 GCC_CMD = "riscv64-linux-gnu-gcc"
+OBJDUMP_CMD = "riscv64-linux-gnu-objdump"
 GEM5_BIN = "./build/RISCV/gem5.opt"
 M5_INCLUDE = os.path.join(GEM5_ROOT, "include")
 M5_OP_ASM = os.path.join(GEM5_ROOT, "util/m5/src/abi/riscv/m5op.S")
@@ -24,7 +25,7 @@ OVERHEAD_CONSTANTS = {
     "dcache_access":    0,
     "branch_pred":      0, 
     "branch_miss":      0,
-    "simSeconds":       0.0 
+    "simSeconds":       0.0 # En segundos
 }
 
 # ==============================================================================
@@ -62,15 +63,15 @@ PRETTY_NAMES = {
 def compile_c_program(c_file):
     source_dir = os.path.dirname(c_file)
     base_name = os.path.splitext(os.path.basename(c_file))[0]
-    bin_file = os.path.join(source_dir, base_name) 
+    bin_file = os.path.join(source_dir, base_name)
     
-    print(f"[1/3] Compilando {c_file} -> {bin_file}")
+    print(f"[1/4] Compilando {c_file} -> {bin_file}")
     
     cflags = [
         "-static",
         "-nostdlib",
         "-fno-builtin",     
-        "-e", "main",       
+        "-e", "main", 
         f"-I{M5_INCLUDE}",
     ]
     sources = [
@@ -83,17 +84,17 @@ def compile_c_program(c_file):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            print("ERROR DE COMPILACIÓN GCC:\n", result.stderr)
+            print("ERROR DE COMPILACION GCC:\n", result.stderr)
             sys.exit(1)
     except FileNotFoundError:
-        print(f"Error: No se encontró el compilador: {GCC_CMD}")
+        print(f"Error: No se encontro el compilador: {GCC_CMD}")
         sys.exit(1)
         
     return bin_file
 
 def run_gem5(config_file, bin_file):
     out_dir = "resultados"
-    print(f"[2/3] Corriendo simulacion gem5 usando '{config_file}' (Output en {out_dir})...")
+    print(f"[2/4] Corriendo simulacion gem5 usando '{config_file}' (Output en {out_dir})...")
     
     stats_path = os.path.join(out_dir, "stats.txt")
     if os.path.exists(stats_path):
@@ -106,8 +107,38 @@ def run_gem5(config_file, bin_file):
         sys.exit(1)
     return stats_path
 
+def generate_and_show_codelist(bin_file):
+    out_dir = "resultados"
+    list_file = os.path.join(out_dir, "code.list")
+    
+    print(f"[3/4] Generando code.list y visualizando preambulo...")
+    
+    cmd = [OBJDUMP_CMD, "-d", "-S", "-l", bin_file]
+    
+    try:
+        with open(list_file, "w") as f:
+            subprocess.run(cmd, stdout=f, check=True)
+    except subprocess.CalledProcessError as e:
+        print("ERROR AL EJECUTAR OBJDUMP:\n", e)
+        sys.exit(1)
+        
+    print("\n" + "="*70)
+    print(f"PREVISUALIZACION DE {list_file}:")
+    print("="*70)
+    
+    try:
+        with open(list_file, "r") as f:
+            for line in f:
+                print(line, end='')
+                if "jal" in line and "<m5_dump_stats>" in line:
+                    break
+    except FileNotFoundError:
+        print(f"Error: No se pudo leer el archivo generado {list_file}")
+    
+    print("="*70 + "\n")
+
 def parse_stats(stats_path):
-    print(f"[3/3] Analizando estadisticas")
+    print(f"[4/4] Analizando estadisticas")
     results = {key: 0.0 for key in METRICS_MAP} 
     
     block_count = 0
@@ -134,7 +165,7 @@ def parse_stats(stats_path):
                                 except ValueError:
                                     pass
     except FileNotFoundError:
-        print("Error: No se encontró stats.txt")
+        print("Error: No se encontro stats.txt")
         sys.exit(1)
 
     total_branches = (results.get("bp_look_d_cond", 0) + 
@@ -151,9 +182,11 @@ def parse_stats(stats_path):
     return results
 
 def print_table(results):
-    print("\n" + "="*65)
-    print(f"{'MÉTRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
-    print("="*65)
+    print("\n" + "="*70)
+    print(f"TABLA DE RESULTADOS")
+    print("="*70)
+    print(f"{'METRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
+    print("="*70)
     
     keys_order = ["numCycles", "numInsts", 
                   "icache_miss", "dcache_miss",
@@ -192,8 +225,8 @@ def print_table(results):
             clean_array_official.append(round(val_off_us))
             clean_array_corrected.append(round(val_cor_us))
             
-            fmt_off = f"{val_off_us:.2f}"
-            fmt_cor = f"{val_cor_us:.2f}"
+            fmt_off = f"{int(val_off_us)}"
+            fmt_cor = f"{int(val_cor_us)}"
         
         elif key == "ipc":
             clean_array_official.append(round(val_official, 4))
@@ -210,7 +243,7 @@ def print_table(results):
             fmt_cor = f"{int(val_corrected)}"
             
         print(f"{label:<25} | {fmt_off:>15} | {fmt_cor:>15}")
-    print("="*65 + "\n")
+    print("="*70 + "\n")
 
     print(f"Clean result (OFFICIAL):  {clean_array_official}")
     print(f"Clean result (CORRECTED): {clean_array_corrected}\n")
@@ -233,5 +266,6 @@ if __name__ == "__main__":
         
     binary = compile_c_program(c_file)
     stats_file = run_gem5(config_file, binary)
+    generate_and_show_codelist(binary)
     metrics = parse_stats(stats_file)
     print_table(metrics)
