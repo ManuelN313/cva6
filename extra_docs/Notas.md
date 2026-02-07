@@ -367,7 +367,7 @@ riscv64-linux-gnu-gcc programa.c gem5/util/m5/src/abi/riscv/m5op.S -static -nost
 - No entiendo muy bien la explicacion del branchpredictor (consultar a los profes)
 
 
-# Notas 
+## Reunion 15/01
 
 - Tratar de cambiar el cache line size de gem5 de 64 a 128
 - Identificar la latencia la memoria ram de Verilator
@@ -375,3 +375,19 @@ riscv64-linux-gnu-gcc programa.c gem5/util/m5/src/abi/riscv/m5op.S -static -nost
 - Analizar el procesamiento de instrucciones del CVA6 (seguir el camino de las instruccionesm, como y cuantas se ejecutan)
 - Verificar las latencias de las unidades funcionales 
 - Juntarse con Gonza para ver lo del object dump en makefile de Verilator
+
+## Reunion 06/02
+
+0) Modificar scripts de gem5/verilator para que se muestren las intrucciones del programa
+1) Documentar los parametros de gem5 (poner lo que significa el parametro y de donde lo sacaste)
+2) Ver si hay compresion de instrucciones en Verilator. Ver como se compilan los programas en Verilator y gem5
+3) Verificar el parametro decodeInputWidth y decodeCycleInput
+4) Probar daxpy 128 bytes en linea cache y 128 bits en fetch
+
+Tareas opcionales:
+- Revisar los siguientes parametros:
+  - Cache
+  - Functional Units
+  - Ver que tenga sentido los ciclos de la MemoryWrite y MemoryRead (comparar los tiempos del procesador con la memoria)
+- Tener en cuenta que los access y miss de cache pueden ser distintos en Verilator y Gem5. Ver como se miden para cada uno 
+- Identificar la latencia de la memoria ram de Verilator. Investigar porque gtkwave me daba algo raro
