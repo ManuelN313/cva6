@@ -1,6 +1,4 @@
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <encoding.h>
@@ -38,6 +36,7 @@ int main() {
     uint64_t start_hpm7 = read_csr(mhpmcounter7);
     uint64_t start_hpm8 = read_csr(mhpmcounter8);
 
+    // Programa
 	const int n_iter = 10, fc_x = 4, fc_y = 4, N = 10;
 	float t_amb = 25.0, fc_temp = 60.5, sum, x[N*N], x_tmp[N*N];
 

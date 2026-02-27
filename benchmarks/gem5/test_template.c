@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <gem5/m5ops.h>
 
 int main(void)
