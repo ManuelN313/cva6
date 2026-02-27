@@ -41,6 +41,7 @@ main:
   
   li t4, 0                     # t4 = contador (i = 0)
 
+.align 4
 loop:
   # BLOQUE 1 (Offset 0)
   fld f5, 0(s5)

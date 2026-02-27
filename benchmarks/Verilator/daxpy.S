@@ -108,7 +108,8 @@ main:
   mv s7, s4                    # Offset Z -> s7
 
   li t4, 0                     # i = 0 (contador)
-    
+
+.align 4 
 loop:
   fld f5, 0(s5)                # f5 = X[i]
   fld f6, 0(s6)                # f6 = Y[i]
