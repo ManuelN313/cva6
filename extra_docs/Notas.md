@@ -389,5 +389,52 @@ Tareas opcionales:
   - Cache
   - Functional Units
   - Ver que tenga sentido los ciclos de la MemoryWrite y MemoryRead (comparar los tiempos del procesador con la memoria)
+  - Tener en cuenta que los access y miss de cache pueden ser distintos en Verilator y Gem5. Ver como se miden para cada uno 
+- Identificar la latencia de la memoria ram de Verilator. Investigar porque gtkwave me daba algo raro
+
+## Notas 06/02 a 12/02
+
+- En gtkwave, los ciclos duran 2 ps lo cual es completamente irreal. Por lo que voy a tener que sacar las latencias de las cache y la memoria a partir de los ciclos.
+ 
+# Reunion 12/02
+
+- Checkear la compilacion de verilator (centrarse en march=rv64gc_zba_zbb_zbs_zbc_zbkb_zbkx_zkne_zknd_zknh -mabi=lp64d). Revisar si tengo que sacar las librerias estandar de C.
+- Modificar los scripts de gem5/verilator para manden el object dump a un archivo de texto.
+- Probar un programa que generea una excepcion para ver que hace la metrica excepciones de verilator.
+- Analizar los parametros de la cache de gem5.
+- Verificar que hacen las metricas de verilator:
+  - ITLB Misses: Number of misses in ITLB
+	- DTLB Misses: Number of misses in DTLB
+
+- Verificar el parametro decodeInputWidth y decodeCycleInput
 - Tener en cuenta que los access y miss de cache pueden ser distintos en Verilator y Gem5. Ver como se miden para cada uno 
 - Identificar la latencia de la memoria ram de Verilator. Investigar porque gtkwave me daba algo raro
+- Analizar el sistema de memoria completo de cva6 (leer documentacion)
+
+
+## Notas 12/02 a 19/02
+
+- Cuando ponemos -nostdlib, el linker no incluye a las librerias stdio.h y stdlib.h
+- Probe tanto en c como assembly programas que generan excepciones (dividir por 0, acceder a memoria fuera de rango) y no se incrementa el contador de excepciones. (Capaz haya que investigar mas al respecto, pero por ahora no le doy mucha importancia)
+- La arquitectura cv64a6_imafdc_sv39 utiliza Memoria Virtual (el sv39 es quien indica esto), es decir, el procesador no lee las direcciones físicas directamente de la RAM sino que primero debe traducir la Dirección Virtual a una Dirección Física consultando una "Tabla de Páginas" en la memoria. Como buscar en esa tabla es muy lento, el procesador tiene una pequeña caché ultrarrápida (el TLB) que guarda las traducciones más recientes.
+  - ITLB (Instruction TLB): Es el caché de traducciones exclusivamente para las direcciones de las instrucciones que el procesador está leyendo para ejecutar. Un ITLB Miss ocurre cuando el código hace un salto a una función que está en una "página" de memoria cuya traducción no está guardada.
+  - DTLB (Data TLB): Es el caché de traducciones para las direcciones de datos (variables, arreglos, punteros). Un DTLB Miss ocurre cuando intentas leer o escribir un dato (load/store) que vive en una página de memoria no mapeada en el TLB.
+
+### Latencia de CVA6
+
+#### Instruccion Cache (7100ps - 7200ps)
+
+- Para determinar la latencia de la caché de instrucciones (I-Cache) utilizando GTKWave, es necesario ubicar dentro del módulo frontend las señales de reloj (clk_i), petición (icache_dreq_o.req) y respuesta (icache_dreq_i.valid o icache_valid_q). El procedimiento consiste en identificar el flanco de subida donde la señal de petición cambia de 0 a 1 y, a partir de ese instante, contar la cantidad de ciclos de reloj transcurridos hasta que la señal de respuesta también alcance el valor lógico de 1.  El número de ciclos resultantes corresponde a la latencia exacta de la operación.
+
+![alt text](image-9.png)
+
+- En la imagen podemos ver que la latencia de la I-Cache es de 1 ciclo. 
+
+# Reunion 19/02
+
+- Cambiar el object dump de Verilator y gem5 para que sea igual a la compilacion.
+- Fijarse donde esta el comando de compilacion de Verilator (para poder sacar las comprimidas)
+- Fijarse si en gem5 se puede desactivar la paginacion virtual
+- Cambiar a un 8 el NumPorts en wt_dcache.sv y ver si cambia rd_idx (si se generan mas de este tipo)
+- Ver porque los accesos de cache se dividen en 3 requests. (l1_dcache_access_i[0].data_req y l1_dcache_access_i[1].data_req y l1_dcache_access_i[2].data_req)
+- Analizar la latencia de la memoria ram de Verilator. Si llegas tambien la de las caches.
