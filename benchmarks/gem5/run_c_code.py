@@ -7,8 +7,8 @@ import re
 # CONFIGURACION GLOBAL
 # ==============================================================================
 GEM5_ROOT = os.getcwd()
-GCC_CMD = "riscv64-linux-gnu-gcc"
-OBJDUMP_CMD = "riscv64-linux-gnu-objdump"
+GCC_CMD = "riscv64-unknown-elf-gcc"
+OBJDUMP_CMD = "riscv64-unknown-elf-objdump"
 GEM5_BIN = "./build/RISCV/gem5.opt"
 M5_INCLUDE = os.path.join(GEM5_ROOT, "include")
 M5_OP_ASM = os.path.join(GEM5_ROOT, "util/m5/src/abi/riscv/m5op.S")
@@ -69,7 +69,13 @@ def compile_c_program(c_file):
     
     cflags = [
         "-static",
+        "-mcmodel=medany",
+        "-fvisibility=hidden",
         "-nostdlib",
+        "-nostartfiles",
+        "-lgcc",
+        "-march=rv64gc_zba_zbb_zbs_zbc_zbkb_zbkx_zkne_zknd_zknh",
+        "-mabi=lp64d",
         "-fno-builtin",     
         "-e", "main", 
         f"-I{M5_INCLUDE}",
@@ -79,7 +85,7 @@ def compile_c_program(c_file):
         M5_OP_ASM
     ]
     
-    cmd = [GCC_CMD] + sources + cflags + ["-lgcc", "-o", bin_file]
+    cmd = [GCC_CMD] + sources + cflags + ["-o", bin_file]
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -110,6 +116,7 @@ def run_gem5(config_file, bin_file):
 def generate_and_show_codelist(bin_file):
     out_dir = "resultados"
     list_file = os.path.join(out_dir, "code.list")
+    clean_file = os.path.join(out_dir, "code_clean.txt")
     
     print(f"[3/4] Generando code.list y visualizando preambulo...")
     
@@ -127,9 +134,10 @@ def generate_and_show_codelist(bin_file):
     print("="*70)
     
     try:
-        with open(list_file, "r") as f:
+        with open(list_file, "r") as f, open(clean_file, "w") as f_clean:
             for line in f:
                 print(line, end='')
+                f_clean.write(line)
                 if "jal" in line and "<m5_dump_stats>" in line:
                     break
     except FileNotFoundError:

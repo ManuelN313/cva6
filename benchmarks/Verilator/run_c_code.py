@@ -42,16 +42,17 @@ ORDERED_KEYS = ['x18', 'x19', 'x20', 'x21', 'x22', 'x23', 'x24', 'x25', 'x26']
 
 def generate_and_show_codelist(binary_path):
     """
-    Genera el archivo .list usando objdump y muestra la sección de CODIGO filtrada.
+    Genera el archivo .list usando objdump y muestra la seccion de CODIGO filtrada.
     """
     if not os.path.exists(binary_path):
         print(f"[!] No se encontro el binario para desmontar: {binary_path}")
-        print(f"    (Verifique si la compilación fue exitosa y la ruta es correcta)")
+        print(f"    (Verifique si la compilacion fue exitosa y la ruta es correcta)")
         return
 
     list_path = os.path.splitext(binary_path)[0] + ".list"
+    clean_path = os.path.splitext(binary_path)[0] + "_clean.txt"
     
-    cmd = f"riscv64-linux-gnu-objdump -d -S -l {binary_path}"
+    cmd = f"riscv64-unknown-elf-objdump -d -S -l {binary_path}"
     
     print(f"\n[INFO] Generando disassembly en: {list_path}")
     try:
@@ -61,7 +62,7 @@ def generate_and_show_codelist(binary_path):
         print(f"[!] Error ejecutando objdump: {e}")
         return
     except FileNotFoundError:
-        print("[!] Error: No se encontro 'riscv64-linux-gnu-objdump'. Verifique su toolchain.")
+        print("[!] Error: No se encontro 'riscv64-unknown-elf-objdump'. Verifique su toolchain.")
         return
 
     # Visualización Filtrada
@@ -69,7 +70,7 @@ def generate_and_show_codelist(binary_path):
     print("CODIGO DESENSAMBLADO")
     print("="*70)
 
-    start_pattern = "// Codigo"
+    start_pattern = "// Programa"
     end_pattern = "// Lectura Final"
     
     printing = False
@@ -79,33 +80,37 @@ def generate_and_show_codelist(binary_path):
         with open(list_path, "r") as f:
             lines = f.readlines()
             
-        for line in lines:
-            if end_pattern in line:
-                printing = False
-                break 
+        with open(clean_path, "w") as f_clean:
+            for line in lines:
+                if end_pattern in line:
+                    printing = False
+                    break 
 
-            if start_pattern in line:
-                printing = True
-                found_any = True
-                continue 
+                if start_pattern in line:
+                    printing = True
+                    found_any = True
+                    continue 
 
-            if printing:
-                if line.strip().startswith('/'):
-                    if "(discriminator" in line:
-                        print(line, end='')
-                        continue
-                    else:
-                        continue
+                if printing:
+                    if line.strip().startswith('/'):
+                        if "(discriminator" in line:
+                            print(line, end='')
+                            f_clean.write(line)
+                            continue
+                        else:
+                            continue
 
-                print(line, end='')
+                    print(line, end='')
+                    f_clean.write(line)
 
         if not found_any:
             print("[WARN] No se encontraron las etiquetas '// Codigo' en el .list")
 
     except Exception as e:
-        print(f"[!] Error leyendo .list: {e}")
+        print(f"[!] Error leyendo/escribiendo .list: {e}")
 
     print("=" * 70 + "\n")
+    print(f"[INFO] Archivo limpio guardado en: {clean_path}")
 
 def main():
     # Configuracion de Directorios
