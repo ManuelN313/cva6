@@ -14,15 +14,16 @@ M5_INCLUDE = os.path.join(GEM5_ROOT, "include")
 M5_OP_ASM = os.path.join(GEM5_ROOT, "util/m5/src/abi/riscv/m5op.S")
 
 # ==============================================================================
-# CONSTANTES DE OVERHEAD (Configuracion Nueva)
+# CONSTANTES DE OVERHEAD (Configuracion Test)
 # ==============================================================================
 OVERHEAD_CONSTANTS = {
-    "numCycles":        33,
+    "numCycles":        54,
     "numInsts":         5,
-    "icache_miss":      1,
+    "icache_miss":      2,
     "dcache_miss":      0,
-    "icache_access":    9,
+    "icache_access":    13,
     "dcache_access":    0,
+    "pipeline_stall":   22,
     "branch_pred":      0, 
     "branch_miss":      0,
     "simSeconds":       0.0 # En segundos
@@ -33,11 +34,12 @@ OVERHEAD_CONSTANTS = {
 # ==============================================================================
 METRICS_MAP = {
     "numCycles":        r"cores\.core\.numCycles",
-    "numInsts":         r"board\.processor\.cores\.core\.commitStats0\.numInsts\s",
+    "numInsts":         r"cores\.core\.commitStats0\.numInsts\s",
     "icache_miss":      r"l1icaches\.overallMisses::total",
-    "dcache_miss":      r"l1dcaches\.overallMisses::total",
+    "dcache_miss":      r"l1dcaches\.ReadReq.misses::total",
     "icache_access":    r"l1icaches\.overallAccesses::total",
     "dcache_access":    r"l1dcaches\.overallAccesses::total",
+    "pipeline_stall":   r"cores\.core\.idleCycles",  
     "bp_look_d_cond":   r"branchPred\.btb\.lookups::DirectCond",
     "bp_look_d_uncond": r"branchPred\.btb\.lookups::DirectUncond",
     "bp_look_i_uncond": r"branchPred\.btb\.lookups::IndirectUncond",
@@ -51,10 +53,11 @@ PRETTY_NAMES = {
     "numCycles": "Ciclos",
     "numInsts": "Instrucciones",
     "icache_miss": "Misses I-Cache",
-    "dcache_miss": "Misses D-Cache",
+    "dcache_miss": "Misses D-Cache (Read)",
     "icache_access": "Accesos I-Cache",
     "dcache_access": "Accesos D-Cache",
-    "branch_pred": "Total Branch", 
+    "pipeline_stall": "Pipeline Stall",
+    "branch_pred": "Branches", 
     "branch_miss": "Branch Mispredicts",
     "simSeconds": "Tiempo (us)",
     "ipc": "IPC"
@@ -65,7 +68,7 @@ def compile_c_program(c_file):
     base_name = os.path.splitext(os.path.basename(c_file))[0]
     bin_file = os.path.join(source_dir, base_name)
     
-    print(f"[1/4] Compilando {c_file} -> {bin_file}")
+    print(f"[INFO] Compilando {c_file} -> {bin_file}")
     
     cflags = [
         "-static",
@@ -90,17 +93,17 @@ def compile_c_program(c_file):
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            print("ERROR DE COMPILACION GCC:\n", result.stderr)
+            print("[ERROR]", result.stderr)
             sys.exit(1)
     except FileNotFoundError:
-        print(f"Error: No se encontro el compilador: {GCC_CMD}")
+        print(f"[ERROR] No se encontro el compilador: {GCC_CMD}")
         sys.exit(1)
         
     return bin_file
 
 def run_gem5(config_file, bin_file):
     out_dir = "resultados"
-    print(f"[2/4] Corriendo simulacion gem5 usando '{config_file}' (Output en {out_dir})...")
+    print(f"[INFO] Corriendo simulacion gem5 usando '{config_file}'")
     
     stats_path = os.path.join(out_dir, "stats.txt")
     if os.path.exists(stats_path):
@@ -109,7 +112,7 @@ def run_gem5(config_file, bin_file):
     cmd = [GEM5_BIN, "-d", out_dir, config_file, bin_file]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print("ERROR EN GEM5:\n", result.stderr)
+        print("[ERROR]", result.stderr)
         sys.exit(1)
     return stats_path
 
@@ -118,7 +121,7 @@ def generate_and_show_codelist(bin_file):
     list_file = os.path.join(out_dir, "code.list")
     clean_file = os.path.join(out_dir, "code_clean.txt")
     
-    print(f"[3/4] Generando code.list y visualizando preambulo...")
+    print(f"[INFO] Generando codigo desensamblado en: {list_file}")
     
     cmd = [OBJDUMP_CMD, "-d", "-S", "-l", bin_file]
     
@@ -126,11 +129,11 @@ def generate_and_show_codelist(bin_file):
         with open(list_file, "w") as f:
             subprocess.run(cmd, stdout=f, check=True)
     except subprocess.CalledProcessError as e:
-        print("ERROR AL EJECUTAR OBJDUMP:\n", e)
+        print("[ERROR]", e)
         sys.exit(1)
         
     print("\n" + "="*70)
-    print(f"PREVISUALIZACION DE {list_file}:")
+    print(f"CODIGO DESENSAMBLADO")
     print("="*70)
     
     try:
@@ -141,12 +144,13 @@ def generate_and_show_codelist(bin_file):
                 if "jal" in line and "<m5_dump_stats>" in line:
                     break
     except FileNotFoundError:
-        print(f"Error: No se pudo leer el archivo generado {list_file}")
+        print(f"[WARN] No se pudo leer el archivo generado {list_file}")
     
-    print("="*70 + "\n")
+    print("\n" + "="*70 + "\n")
+    print(f"[INFO] Archivo limpio guardado en: {clean_file}")
 
 def parse_stats(stats_path):
-    print(f"[4/4] Analizando estadisticas")
+    print("[INFO] Extrayendo estadisticas")
     results = {key: 0.0 for key in METRICS_MAP} 
     
     block_count = 0
@@ -173,7 +177,7 @@ def parse_stats(stats_path):
                                 except ValueError:
                                     pass
     except FileNotFoundError:
-        print("Error: No se encontro stats.txt")
+        print("[ERROR] No se encontro stats.txt")
         sys.exit(1)
 
     total_branches = (results.get("bp_look_d_cond", 0) + 
@@ -196,9 +200,8 @@ def print_table(results):
     print(f"{'METRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
     print("="*70)
     
-    keys_order = ["numCycles", "numInsts", 
-                  "icache_miss", "dcache_miss",
-                  "icache_access", "dcache_access",
+    keys_order = ["numCycles", "numInsts","icache_miss", "dcache_miss",
+                  "icache_access", "dcache_access", "pipeline_stall",
                   "branch_pred", "branch_miss", "simSeconds", "ipc"]
     
     clean_array_official = []
@@ -253,23 +256,23 @@ def print_table(results):
         print(f"{label:<25} | {fmt_off:>15} | {fmt_cor:>15}")
     print("="*70 + "\n")
 
-    print(f"Clean result (OFFICIAL):  {clean_array_official}")
-    print(f"Clean result (CORRECTED): {clean_array_corrected}\n")
+    print(f"Clean result (OFICIAL):  {clean_array_official}")
+    print(f"Clean result (NETO):     {clean_array_corrected}\n")
     
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Uso: python3 run_perf.py <config_gem5.py> <tests/program.c>")
+        print("python3 run_c_code.py <config_gem5.py> <tests/program.c>")
         sys.exit(1)
     
     config_file = sys.argv[1]
     c_file = sys.argv[2]
     
     if not os.path.exists(config_file):
-        print(f"Error: El archivo de configuracion '{config_file}' no existe.")
+        print(f"[ERROR] El archivo de configuracion '{config_file}' no existe")
         sys.exit(1)
 
     if not os.path.exists(c_file):
-        print(f"Error: El archivo de programa '{c_file}' no existe.")
+        print(f"[ERROR] El archivo de programa '{c_file}' no existe")
         sys.exit(1)
         
     binary = compile_c_program(c_file)

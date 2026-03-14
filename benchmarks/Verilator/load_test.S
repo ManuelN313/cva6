@@ -1,12 +1,51 @@
-.data
-  N:      .dword 4096          # Tamaño de los vectores
-  Alpha:  .dword 2             # Escalar a multiplicar
+.section .data
+.align 6
 
-.bss
-.align 3
-  X: .zero 32768               # Vector X (4096)*8 bytes
-  Y: .zero 32768               # Vector Y (4096)*8 bytes
-  Z: .zero 32768               # Vector Z (4096)*8 bytes
+my_array:
+.dword 0xA0A0A0A0A0A0A0A0
+.dword 0xA8A8A8A8A8A8A8A8  # Offset 8   (Será leído por t2)
+.zero 48                   # Rellenamos los 48 bytes restantes de la línea (64 - 16 = 48)
+
+# --- Línea de Caché 1 (Offsets 64 al 127) ---
+.dword 0xB0B0B0B0B0B0B0B0  # Offset 64  (Será leído por t1)
+.dword 0xB8B8B8B8B8B8B8B8  # Offset 72  (Será leído por t5)
+.zero 48                   # Rellenamos
+
+# --- Línea de Caché 2 (Offsets 128 al 191) ---
+.dword 0xC0C0C0C0C0C0C0C0  # Offset 128 (Será leído por t3)
+.zero 56                   # Rellenamos los 56 bytes restantes (64 - 8 = 56)
+
+# --- Línea de Caché 3 (Offsets 192 al 255) ---
+.dword 0xD0D0D0D0D0D0D0D0  # Offset 192 (Será leído por t4)
+.dword 0xD8D8D8D8D8D8D8D8  # Offset 200 (Será leído por t6)
+.zero 48
+
+# --- Línea de Caché 4 (Offsets 256 al 319) ---
+.dword 0xE0E0E0E0E0E0E0E0  # Offset 256 (Será leído por a1)
+.dword 0xE8E8E8E8E8E8E8E8  # Offset 264 (Será leído por a4)
+.zero 48
+
+# --- Línea de Caché 5 (Offsets 320 al 383) ---
+.dword 0xF0F0F0F0F0F0F0F0  # Offset 320 (Será leído por a2)
+.zero 56
+
+# --- Línea de Caché 6 (Offsets 384 al 447) ---
+.dword 0x1111111111111111  # Offset 384 (Será leído por a3)
+.dword 0x1818181818181818  # Offset 392 (Será leído por a5)
+.zero 48
+
+# --- Línea de Caché 7 (Offsets 448 al 511) ---
+.dword 0x2222222222222222  # Offset 448 (Será leído por a6)
+.dword 0x2828282828282828  # Offset 456 (Será leído por s2)
+.zero 48
+
+# --- Línea de Caché 8 (Offsets 512 al 575) ---
+.dword 0x3333333333333333  # Offset 512 (Será leído por a7)
+.zero 56
+
+# --- Línea de Caché 9 (Offsets 576 al 639) ---
+.dword 0x4444444444444444  # Offset 576 (Será leído por s1)
+.zero 56
 
 .section .text
 .global main
@@ -91,62 +130,76 @@ main:
   # ---------------------------------------------------------
   # PROGRAMA
   # ---------------------------------------------------------
-  la t0, N
-  ld t1, 0(t0)                 # t1 = N (4096)
-  
-  la t2, Alpha
-  ld t3, 0(t2)
-  fcvt.d.l f10, t3             # f10 = Alpha (double)
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
 
-  la s2, X
-  la s3, Y
-  la s4, Z
+  .align 4
+  la a0, my_array
+    
+  ld t0, 0(a0)      # MISS 1: Trae los bytes del 0 al 63 a la caché
+  ld t1, 64(a0)     # MISS 2: Trae los bytes del 64 al 127
+  ld t2, 8(a0)      # HIT 1: Lee el byte 8. ¡Ya está en caché gracias al Miss 1!
+  ld t3, 128(a0)    # MISS 3: Trae los bytes del 128 al 191
+  ld t4, 192(a0)    # MISS 4: Trae los bytes del 192 al 255
+  ld t5, 72(a0)     # HIT 2: Lee el byte 72. ¡Ya está en caché gracias al Miss 2!
+  ld t6, 200(a0)    # HIT 3: Lee el byte 200. ¡Ya está en caché gracias al Miss 4!
+  ld a1, 256(a0)    # MISS 5: Trae los bytes del 256 al 319
+  ld a2, 320(a0)    # MISS 6: Trae los bytes del 320 al 383
+  ld a3, 384(a0)    # MISS 7: Trae los bytes del 384 al 447
+  ld a4, 264(a0)    # HIT 4: Dentro de la línea del Miss 5
+  ld a5, 392(a0)    # HIT 5: Dentro de la línea del Miss 7
+  ld a6, 448(a0)    # MISS 8: Trae los bytes del 448 al 511
+  ld a7, 512(a0)    # MISS 9: Trae los bytes del 512 al 575
+  ld s1, 576(a0)    # MISS 10: Trae los bytes del 576 al 639
+  ld s2, 456(a0)    # HIT 6: Dentro de la línea del Miss 8
+  sd s2, 64(a0)     # STORE
 
-  mv s5, s2                    # Puntero X
-  mv s6, s3                    # Puntero Y
-  mv s7, s4                    # Puntero Z
-
-  srli t5, t1, 2               # t5 = N >> 2 (división por 4)
-  
-  li t4, 0                     # t4 = contador (i = 0)
-
-.align 4
-loop:
-  # BLOQUE 1 (Offset 0)
-  fld f5, 0(s5)
-  fld f6, 0(s6)
-  fmul.d f7, f10, f5
-  fadd.d f8, f7, f6
-  fsd f8, 0(s7)
-
-  # BLOQUE 2 (Offset 8)
-  fld f9, 8(s5)
-  fld f11, 8(s6)
-  fmul.d f12, f10, f9
-  fadd.d f13, f12, f11
-  fsd f13, 8(s7)
-
-  # BLOQUE 3 (Offset 16)
-  fld f14, 16(s5)
-  fld f15, 16(s6)
-  fmul.d f16, f10, f14
-  fadd.d f17, f16, f15
-  fsd f17, 16(s7)
-
-  # BLOQUE 4 (Offset 24)
-  fld f18, 24(s5)
-  fld f19, 24(s6)
-  fmul.d f20, f10, f18
-  fadd.d f21, f20, f19
-  fsd f21, 24(s7)
-
-  addi s5, s5, 32              # Avanzar 4 doubles (32 bytes) en X
-  addi s6, s6, 32              # Avanzar 4 doubles (32 bytes) en Y
-  addi s7, s7, 32              # Avanzar 4 doubles (32 bytes) en Z
-
-  # CONTROL DEL BUCLE
-  addi t4, t4, 1               # i++
-  blt t4, t5, loop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
+  nop
 
   # ---------------------------------------------------------
   # SNAPSHOT FINAL Y CÁLCULO DE DIFERENCIAS

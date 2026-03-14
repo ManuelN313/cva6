@@ -20,7 +20,7 @@ main:
   call m5_reset_stats
 
   # -----------------------------------------------------------
-  # CODE
+  # PROGRAMA
   # -----------------------------------------------------------
   # Cargar valores iniciales
   la t0, N                     # Dirección de N

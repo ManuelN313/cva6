@@ -12,27 +12,27 @@ import shutil
 # CONSTANTES DE OVERHEAD
 # ==============================================================================
 OVERHEAD_CONSTANTS = {
-    'x18': 162,  # Ciclos (Cycles)
-    'x19': 32,   # Instrucciones (Instr)
-    'x20': 8,    # I-Cache Miss
-    'x21': 8,    # D-Cache Miss
-    'x22': 56,   # I-Cache Access
-    'x23': 24,   # D-Cache Access
+    'x18': 206,  # Ciclos
+    'x19': 32,   # Instrucciones
+    'x20': 8,    # Misses I-Cache
+    'x21': 8,    # Misses D-Cache (Read)
+    'x22': 56,   # Accesos I-Cache
+    'x23': 188,  # Pipeline Stall
     'x24': 0,    # Branches
     'x25': 0,    # Branch Mispredicts
-    'x26': 3     # Tiempo (us)
+    'x26': 4     # Tiempo (us)
 }
 
 # ==============================================================================
 # CONFIGURACION
 # ==============================================================================
 METRICS_MAP = {
-    'x18': 'Ciclos (Cycles)',      # s2
-    'x19': 'Instrucciones (Instr)',# s3
-    'x20': 'I-Cache Miss',         # s4
-    'x21': 'D-Cache Miss',         # s5
-    'x22': 'I-Cache Access',       # s6
-    'x23': 'D-Cache Access',       # s7
+    'x18': 'Ciclos',               # s2
+    'x19': 'Instrucciones',        # s3
+    'x20': 'Misses I-Cache',       # s4
+    'x21': 'Misses D-Cache (Read)',# s5
+    'x22': 'Accesos I-Cache',      # s6
+    'x23': 'Pipeline Stall',       # s7
     'x24': 'Branches',             # s8
     'x25': 'Branch Mispredicts',   # s9
     'x26': 'Tiempo (us)'           # s10
@@ -45,8 +45,7 @@ def generate_and_show_codelist(binary_path):
     Genera el archivo .list usando objdump y muestra la seccion de CODIGO filtrada.
     """
     if not os.path.exists(binary_path):
-        print(f"[!] No se encontro el binario para desmontar: {binary_path}")
-        print(f"    (Verifique si la compilacion fue exitosa y la ruta es correcta)")
+        print(f"[ERROR] No se encontro el binario para desmontar: {binary_path}")
         return
 
     list_path = os.path.splitext(binary_path)[0] + ".list"
@@ -54,21 +53,21 @@ def generate_and_show_codelist(binary_path):
     
     cmd = f"riscv64-unknown-elf-objdump -d -S -l {binary_path}"
     
-    print(f"\n[INFO] Generando disassembly en: {list_path}")
+    print(f"\n[INFO] Generando codigo desensamblado en: {list_path}")
     try:
         with open(list_path, "w") as f:
             subprocess.run(shlex.split(cmd), stdout=f, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"[!] Error ejecutando objdump: {e}")
+        print(f"[ERROR] {e}")
         return
     except FileNotFoundError:
-        print("[!] Error: No se encontro 'riscv64-unknown-elf-objdump'. Verifique su toolchain.")
+        print("[ERROR] No se encontro 'riscv64-unknown-elf-objdump'")
         return
 
     # Visualización Filtrada
     print("\n" + "="*70)
     print("CODIGO DESENSAMBLADO")
-    print("="*70)
+    print("="*70 + "\n")
 
     start_pattern = "// Programa"
     end_pattern = "// Lectura Final"
@@ -104,10 +103,10 @@ def generate_and_show_codelist(binary_path):
                     f_clean.write(line)
 
         if not found_any:
-            print("[WARN] No se encontraron las etiquetas '// Codigo' en el .list")
+            print("[WARN] No se encontro la etiqueta '// Programa' en el .list\n")
 
     except Exception as e:
-        print(f"[!] Error leyendo/escribiendo .list: {e}")
+        print(f"[ERROR] {e}")
 
     print("=" * 70 + "\n")
     print(f"[INFO] Archivo limpio guardado en: {clean_path}")
@@ -126,18 +125,18 @@ def main():
         try:
             shutil.rmtree(work_ver_path)
         except OSError as e:
-            print(f"[!] Error eliminando work-ver: {e}")
+            print(f"[WARN] {e}")
 
     # Parsear Argumentos
     parser = argparse.ArgumentParser(description="Ejecutar test C en CVA6 y extraer metricas.")
-    parser.add_argument("target", help="Target de la arquitectura (ej: cv64a6_imafdc_sv39)")
+    parser.add_argument("target", help="Target de la arquitectura (ej: cv64a6_imafdc_sv39_hpdcache)")
     parser.add_argument("c_file", help="Ruta al archivo .c (relativa o absoluta)")
     args = parser.parse_args()
 
     # Validar existencia del archivo C
     abs_c_path = os.path.abspath(args.c_file)
     if not os.path.exists(abs_c_path):
-        print(f"Error: El archivo {abs_c_path} no existe.")
+        print(f"[ERROR] El archivo {abs_c_path} no existe")
         sys.exit(1)
 
     rel_c_path = os.path.relpath(abs_c_path, sim_dir)
@@ -183,6 +182,7 @@ def main():
     final_shell_cmd = f"source {setup_script} && {py_cmd_str}"
 
     try:
+        print(f"[INFO] Corriendo simulacion Verilator con '{test_name}.c'\n")
         subprocess.run(
             final_shell_cmd, 
             cwd=sim_dir, 
@@ -193,7 +193,8 @@ def main():
             executable='/bin/bash'
         )
     except subprocess.CalledProcessError as e:
-        print(f"\n[!] Error en simulacion. Codigo: {e.returncode}")
+        print(f"[ERROR] {e.returncode}")
+        sys.exit(1)
 
     # --------------------------------------------------------------------------
     # GENERAR Y MOSTRAR CODIGO 
@@ -208,7 +209,7 @@ def main():
     log_path = os.path.join(log_dir_prediction, log_main)
 
     if not os.path.exists(log_path):
-        print(f"[!] Log no encontrado: {log_path}")
+        print(f"[ERROR] Log de simulacion no encontrado: {log_path}")
         sys.exit(1)
 
     # Parsear Log
@@ -224,18 +225,18 @@ def main():
                         # Convertimos y guardamos. Si aparece varias veces, se guarda la ultima.
                         final_values[reg_key] = int(match.group(2), 16)
     except Exception as e:
-        print(f"[!] Error leyendo log: {e}")
+        print(f"[ERROR] {e}")
         sys.exit(1)
 
     # --------------------------------------------------------------------------
     # CALCULOS E IMPRESION
     # --------------------------------------------------------------------------
-    print("\n" + "="*70)
-    print(f"RESULTADOS DE PERFORMANCE (C): {test_name}")
-    print(f"TARGET: {args.target}")
+    print("[INFO] Extrayendo estadisticas\n")
+    print("="*70)
+    print(f"TABLA DE RESULTADOS")
     print("="*70)
     print(f"{'METRICA':<25} | {'OFICIAL':>15} | {'NETO':>15}")
-    print("-" * 70)
+    print("=" * 70)
 
     clean_official = []
     clean_corrected = []
@@ -268,7 +269,7 @@ def main():
         print(f"{metric_name:<25} | {val_official:>15} | {val_corrected:>15}")
 
     # Imprimir IPC
-    print(f"{'IPC Calculado':<25} | {ipc_official:>15.4f} | {ipc_corrected:>15.4f}")
+    print(f"{'IPC':<25} | {ipc_official:>15.4f} | {ipc_corrected:>15.4f}")
     
     # Agregar IPC a las listas limpias
     clean_official.append(round(ipc_official, 4))
@@ -277,8 +278,8 @@ def main():
     print("="*70)
     
     # Clean Result
-    print(f"\nClean result (OFFICIAL):  {clean_official}")
-    print(f"Clean result (CORRECTED): {clean_corrected}\n")
+    print(f"\nClean result (OFICIAL):  {clean_official}")
+    print(f"Clean result (NETO):     {clean_corrected}\n")
 
 if __name__ == "__main__":
     main()
