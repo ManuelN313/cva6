@@ -438,3 +438,24 @@ Tareas opcionales:
 - Cambiar a un 8 el NumPorts en wt_dcache.sv y ver si cambia rd_idx (si se generan mas de este tipo)
 - Ver porque los accesos de cache se dividen en 3 requests. (l1_dcache_access_i[0].data_req y l1_dcache_access_i[1].data_req y l1_dcache_access_i[2].data_req)
 - Analizar la latencia de la memoria ram de Verilator. Si llegas tambien la de las caches.
+
+# Notas 19/02 a 05/03
+
+- CVA6ConfigIcacheLineWidth y CVA6ConfigDcacheLineWidth son los parametros que determinan el tamaño de la linea de cache. En cv64a6_imafdc_sv39 ambos estan configurados en 128 bits (16 bytes)
+
+![alt text](image-10.png)
+
+![alt text](image-11.png)
+
+- La I-Cache del CVA6 emplea una arquitectura de acceso en paralelo para maximizar la velocidad de ejecución. Ante una solicitud, el hardware accede simultáneamente a las matrices SRAM de etiquetas (Tag) y de datos (Data). Inmediatamente después, evalúa las etiquetas leídas contra la dirección solicitada: en caso de acierto (Hit), un multiplexor selecciona la instrucción válida y descarta el resto; en caso de fallo (Miss), la prelectura se descarta por completo y el procesador detiene la etapa de Fetch para delegar la solicitud a la memoria principal.
+
+| Valor bank_req | Qué indica realmente |
+| --- | --- |
+| 01	| Acceso a la palabra BAJA. Puede ser un Hit o el inicio de un Miss. |
+| 10	| Acceso a la palabra ALTA. Puede ser un Hit o el inicio de un Miss. |
+| 11	| Acceso a la LINEA COMPLETA. Casi siempre indica el momento exacto en que un Miss se resuelve (Refill). |
+| 00	| Cache inactiva. |
+ 
+- Cuando pedimos un dato de RAM ya sea de instrucciones o datos, se trae en un ciclo los primeros 64 bits y en el siguiente ciclo los segundos 64 bits. Solamente se busca una linea de cache (128 bits) y la latencia es de 2 ciclos (3 si contamos el ciclo de la direccion). Luego cuando escribimos en las caches, se escriben los 128 bits en un solo ciclo. Luego para la cache de instrucciones, el procesador lee solamente 32 bits de los 128 bits que se trajeron, mientras que para la cache de datos, el procesador lee o escribe solamente 64 bits.
+
+- Hay dos metricas en Verilator: Load Access y Store Access. Si sumo ambas me da el total de accesos a la cache de datos. Probando con el Daxpy me dio que los accesos a la cache de datos son similares a los de gem5.
