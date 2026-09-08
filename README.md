@@ -49,7 +49,7 @@ Most of the tree is the standard CORE-V CVA6 layout. The pieces most relevant to
 | `vendor/`                                       | Vendored upstream dependencies, pinned so nothing is fetched.                                      |
 | `gem5_config_CVA6/CVA6/`                        | The CVA6 side of the calibration: its benchmarks, the target's configuration package, and the traces under `tests/`. |
 | `gem5_config_CVA6/gem5/`                        | The gem5 side: its benchmarks, the configurations and the patch under `configs/`, and the traces under `tests/`. |
-| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `docker_sync.py`, `create_all_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_repo_jsons.py`, `get_cva6_files.py` and the calibration sweep. |
+| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `docker_sync.py`, `create_all_CVA6_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_repo_jsons.py`, `get_CVA6_files.py` and the calibration sweep. |
 | `viewers/MinorFlow`                             | The MinorFlow visualizer, as a submodule.                                                          |
 | `viewers/CVA6Flow`                              | The CVA6Flow visualizer, as a submodule.                                                           |
 | `gem5_config_CVA6/`                             | The gem5 configuration matched to CVA6, and the gem5 patch it depends on.                          |
@@ -402,7 +402,7 @@ python3 viewers/CVA6Flow/CVA6Flow_tracer.py run_results/daxpy.vcd \
         --disasm-list run_results/daxpy.list -o daxpy.json
 ```
 
-Then open `daxpy.json` in [CVA6Flow](https://github.com/FaMAF-CVA6-Project/CVA6Flow). The tracer finds the listing on its own when it sits beside the VCD under the same name, so `--disasm-list` is only needed when it does not. `viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py` does a whole folder at a time, and `scripts/create_all_repo_jsons.py` does the whole checkout.
+Then open `daxpy.json` in [CVA6Flow](https://github.com/FaMAF-CVA6-Project/CVA6Flow). The tracer finds the listing on its own when it sits beside the VCD under the same name, so `--disasm-list` is only needed when it does not. `viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py` does a whole folder at a time, and `scripts/create_all_CVA6_repo_jsons.py` does the whole checkout.
 
 To use the viewer from inside the container, serve it and open the page on the host:
 
@@ -473,7 +473,7 @@ The trace is `run_results/<test>_trace.txt`. **The viewer does not read it direc
 python3 viewers/MinorFlow/MinorFlow_tracer.py run_results/daxpy_trace.txt -o daxpy.json
 ```
 
-Then open `daxpy.json` in [MinorFlow](https://github.com/FaMAF-CVA6-Project/MinorFlow). Parsing the trace once on disk is what lets a multi-gigabyte run open in a browser at all. `viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py` does a whole folder at a time, and `scripts/create_all_repo_jsons.py` does the whole checkout.
+Then open `daxpy.json` in [MinorFlow](https://github.com/FaMAF-CVA6-Project/MinorFlow). Parsing the trace once on disk is what lets a multi-gigabyte run open in a browser at all. `viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py` does a whole folder at a time, and `scripts/create_all_CVA6_repo_jsons.py` does the whole checkout.
 
 To use the viewer from inside the container, serve it and open the page on the host, which needs no browser in the image and no X11:
 
