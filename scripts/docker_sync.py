@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """Move files between this checkout and the project's containers.
 
-Pulling asks which of the run-output folders to bring back Pushing
-sends the drivers, configurations and tests back in, which is the step whose
-absence makes a container quietly run last week's script.
+Four things to do, one word each. The container is cva6, gem5, or left out
+for both.
 
-    python3 docker_sync.py                  # pull, both containers
-    python3 docker_sync.py gem5             # pull, one container
-    python3 docker_sync.py --push cva6      # push the sources in
-    python3 docker_sync.py gem5 --jsons     # pull, then trace
-    python3 docker_sync.py --list           # show, copy nothing
-    python3 docker_sync.py gem5 --all -y    # every folder, no ask
+    python3 scripts/docker_sync.py push          # send this checkout in
+    python3 scripts/docker_sync.py pull          # bring the results back
+    python3 scripts/docker_sync.py trace         # pull, then make the JSONs
+    python3 scripts/docker_sync.py list          # show what is in there
+
+    python3 scripts/docker_sync.py push gem5     # one container
+    python3 scripts/docker_sync.py trace -y      # take every folder, no asking
+    python3 scripts/docker_sync.py push -n       # say what would be copied
+
+A container keeps its own copy of everything, so a script edited here changes
+nothing inside until it is pushed. That is what push is for, and it is the
+step whose absence makes a container quietly run last week's driver.
 """
 import argparse
 import importlib.util
@@ -18,8 +23,23 @@ import os
 import subprocess
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(HERE)          # this script lives in scripts/
+
+def repo_root():
+    """The repository this script sits in, found by walking up to the nearest
+    .git. The script lives in scripts/, so counting parents would be one more
+    thing to fix the next time the tree moves."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = here
+    while True:
+        if os.path.exists(os.path.join(path, ".git")):
+            return path
+        parent = os.path.dirname(path)
+        if parent == path:
+            return here
+        path = parent
+
+
+REPO = repo_root()
 
 # Where a pulled folder lands, unless --out-dir says otherwise.
 DEFAULT_OUT_DIR = "container_results"
@@ -29,48 +49,77 @@ DEFAULT_OUT_DIR = "container_results"
 # runs to gigabytes, so it never reaches the menu.
 NEVER_PULL = {"work-ver", "work-dpi", "build", "__pycache__"}
 
-# Which folders each flow produces is already written down, with a reason for
-# each, in the cleaners. Read from there so this script cannot drift from them.
+# What each container holds. The push lists are the two folders the images are
+# meant to look like: the drivers and sweeps at the root, the calibration
+# benchmarks in benchmarks/ and the viewer's teaching set beside them, the
+# viewer itself under viewers/ with the server that puts it in the browser.
 CONTAINERS = {
     "gem5": {
         "root": "/gem5",
         "cleaner": "viewers/MinorFlow/scripts/clean_gem5_runs.py",
-        # Mirrors the COPY lines in dockerfiles/gem5/Dockerfile.
+        "tracer": "viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py",
         "push": [
+            # Drivers and sweeps, which run from /gem5.
             ("viewers/MinorFlow/scripts/run_gem5.py", "/gem5/"),
             ("viewers/MinorFlow/scripts/run_all_gem5_benchmarks.py", "/gem5/"),
             ("viewers/MinorFlow/scripts/clean_gem5_runs.py", "/gem5/"),
+            ("viewers/MinorFlow/scripts/run_MinorFlow_sweep.py", "/gem5/"),
+            ("scripts/run_CVA6_testing_sweep.py", "/gem5/"),
+            # Configurations, the fork's and the viewer's, plus the patch.
             ("gem5_config_CVA6/gem5/configs/.", "/gem5/"),
-            ("viewers/MinorFlow/.", "/gem5/viewers/MinorFlow/"),
-            ("dockerfiles/serve_viewers.py", "/gem5/serve_viewers.py"),
+            ("viewers/MinorFlow/configs/gem5_config_MinorFlow.py", "/gem5/"),
+            ("viewers/MinorFlow/configs/gem5_config_Reference_Core.py",
+             "/gem5/"),
+            # The viewer, and the server that puts it in the host's browser.
+            ("viewers/MinorFlow/MinorFlow.html", "/gem5/viewers/MinorFlow/"),
+            ("viewers/MinorFlow/MinorFlow_tracer.py",
+             "/gem5/viewers/MinorFlow/"),
+            ("viewers/MinorFlow/index.html", "/gem5/viewers/MinorFlow/"),
+            ("viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py",
+             "/gem5/viewers/MinorFlow/scripts/"),
+            ("dockerfiles/serve_viewers.py", "/gem5/"),
         ],
-        "push_globs": [("gem5_config_CVA6/gem5/benchmarks", (".c", ".S"),
-                        "/gem5/benchmarks/")],
-        "jsons": "viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py",
+        # Folders copied whole, source -> destination.
+        "push_dirs": [
+            ("gem5_config_CVA6/gem5/benchmarks", "/gem5/benchmarks"),
+            ("viewers/MinorFlow/benchmarks", "/gem5/MinorFlow_benchmarks"),
+        ],
     },
     "cva6": {
         "root": "/cva6",
         "cleaner": "viewers/CVA6Flow/scripts/clean_CVA6_runs.py",
-        # Mirrors the layout dockerfiles/CVA6/Dockerfile builds: the drivers
-        # sit at /cva6 and the tests in /cva6/benchmarks.
+        "tracer": "viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py",
         "push": [
             ("viewers/CVA6Flow/scripts/run_CVA6.py", "/cva6/"),
             ("viewers/CVA6Flow/scripts/run_all_CVA6_benchmarks.py", "/cva6/"),
             ("viewers/CVA6Flow/scripts/clean_CVA6_runs.py", "/cva6/"),
-            ("viewers/CVA6Flow/.", "/cva6/viewers/CVA6Flow/"),
-            ("dockerfiles/serve_viewers.py", "/cva6/serve_viewers.py"),
+            ("viewers/CVA6Flow/scripts/run_CVA6Flow_sweep.py", "/cva6/"),
+            # Straight to where the build reads it. This is the CVA6Flow
+            # package, the one carrying the configuration table and
+            # CVA6_CONFIG_SEL, and it replaces the live one.
+            ("viewers/CVA6Flow/configs/"
+             "cv64a6_imafdc_sv39_hpdcache_wb_config_pkg.sv",
+             "/cva6/core/include/"),
+            # The viewer, and the server that puts it in the host's browser.
+            ("viewers/CVA6Flow/CVA6Flow.html", "/cva6/viewers/CVA6Flow/"),
+            ("viewers/CVA6Flow/CVA6Flow_tracer.py", "/cva6/viewers/CVA6Flow/"),
+            ("viewers/CVA6Flow/index.html", "/cva6/viewers/CVA6Flow/"),
+            ("viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py",
+             "/cva6/viewers/CVA6Flow/scripts/"),
+            ("dockerfiles/serve_viewers.py", "/cva6/"),
         ],
-        "push_globs": [("gem5_config_CVA6/CVA6/benchmarks", (".c", ".S"),
-                        "/cva6/benchmarks/")],
-        "jsons": "viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py",
+        "push_dirs": [
+            ("gem5_config_CVA6/CVA6/benchmarks", "/cva6/benchmarks"),
+            ("viewers/CVA6Flow/benchmarks", "/cva6/CVA6Flow_benchmarks"),
+        ],
     },
 }
 
 
 def load_cleaner(rel):
     """Import a cleaner for its folder tables, without running it."""
-    path = os.path.join(REPO, rel)
-    spec = importlib.util.spec_from_file_location("cleaner", path)
+    spec = importlib.util.spec_from_file_location(
+        "cleaner", os.path.join(REPO, rel))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -98,6 +147,12 @@ def docker(args, **kwargs):
     return subprocess.run(["docker"] + args, **kwargs)
 
 
+def container_exists(name):
+    r = docker(["ps", "-a", "--format", "{{.Names}}"],
+               capture_output=True, text=True)
+    return name in r.stdout.split() if r.returncode == 0 else None
+
+
 def running(name):
     r = docker(["inspect", "-f", "{{.State.Running}}", name],
                capture_output=True, text=True)
@@ -110,8 +165,8 @@ def ensure_running(name, assume_yes):
         return True
     print(f"[INFO] '{name}' is not running.")
     if not assume_yes:
-        # Starting a container is a change to the machine, so it is never done
-        # on its own. Without a terminal to ask, say so and leave it alone.
+        # Starting a container changes the machine, so it is never done on its
+        # own. Without a terminal to ask, say so and leave it alone.
         if not sys.stdin.isatty():
             print(f"[INFO] Skipping '{name}'. Start it, or pass -y.")
             return False
@@ -128,25 +183,15 @@ def ensure_running(name, assume_yes):
     return True
 
 
-def container_exists(name):
-    r = docker(["ps", "-a", "--format", "{{.Names}}"],
-               capture_output=True, text=True)
-    if r.returncode != 0:
-        return None
-    return name in r.stdout.split()
-
-
 def present(name):
-    """[(path, size)] for the candidate folders that exist in the container.
-
-    One `docker exec` for the whole list: a container that is not running has
-    to be started for exec, so asking once keeps that to a single wake-up."""
+    """[(path, size)] for the candidate folders that exist in the container,
+    or None when it could not be looked into."""
     spec = CONTAINERS[name]
     paths = [p for p, _ in candidates(name)]
     if not paths:
         return []
-    # The trailing exit 0 matters: the loop's status is that of its last
-    # test, so a run whose last candidate is absent would look like a failure.
+    # The trailing exit 0 matters: the loop's status is that of its last test,
+    # so a run whose last candidate is absent would look like a failure.
     script = (f"cd {spec['root']} 2>/dev/null || exit 0; "
               "for d in " + " ".join(paths) + "; do "
               "[ -e \"$d\" ] && du -sh \"$d\" 2>/dev/null; done; exit 0")
@@ -165,18 +210,16 @@ def present(name):
     return found
 
 
-def choose(found, reasons, assume_all):
+def choose(found, reasons, take_all):
     """Ask which folders to pull. Returns the chosen paths."""
     print()
     for i, (path, size) in enumerate(found, 1):
         why = reasons.get(path, reasons.get(path.split("/")[0], ""))
         print(f"  {i:2}. {path:32} {size:>7}   {why}")
-    if assume_all:
+    if take_all:
         return [p for p, _ in found]
     if not sys.stdin.isatty():
-        # Nothing to read from, so listing is all this can honestly do.
-        print("\n  Not a terminal, so nothing is chosen. Use --all to pull "
-              "every folder.")
+        print("\n  Not a terminal, so nothing is chosen. Use -y to take all.")
         return []
     print("\n  Numbers separated by spaces, 'a' for all, or Enter to skip.")
     try:
@@ -197,112 +240,150 @@ def choose(found, reasons, assume_all):
     return chosen
 
 
-def pull(name, out_dir, assume_all, list_only):
+# ---------------------------------------------------------------------------
+# The four verbs
+# ---------------------------------------------------------------------------
+def do_list(name, args):
+    found = present(name)
+    if found is None:
+        return 1
+    print(f"\n=== {name} ({CONTAINERS[name]['root']}) ===")
+    if not found:
+        print("  nothing to pull, no run output")
+        return 0
+    reasons = dict(candidates(name))
+    for i, (path, size) in enumerate(found, 1):
+        why = reasons.get(path, reasons.get(path.split("/")[0], ""))
+        print(f"  {i:2}. {path:32} {size:>7}   {why}")
+    return 0
+
+
+def do_pull(name, args):
+    """Returns (failures, [folders that landed])."""
     spec = CONTAINERS[name]
     found = present(name)
     if found is None:
-        return []
+        return 1, []
     if not found:
         print(f"[INFO] {name}: nothing to pull, no run output in "
               f"{spec['root']}")
-        return []
-    reasons = dict(candidates(name))
+        return 0, []
     print(f"\n=== {name} ({spec['root']}) ===")
-    chosen = choose(found, reasons, assume_all or list_only)
-    if list_only:
-        return []
+    chosen = choose(found, dict(candidates(name)), args.yes)
 
-    pulled = []
+    pulled, failed = [], 0
+    target = os.path.join(os.path.abspath(args.out_dir), name)
     for path in chosen:
-        target = os.path.join(out_dir, name)
-        os.makedirs(target, exist_ok=True)
         source = f"{name}:{spec['root']}/{path}"
         print(f"[INFO] {source} -> {target}/")
+        if args.dry_run:
+            continue
+        os.makedirs(target, exist_ok=True)
         if docker(["cp", source, target + os.sep]).returncode == 0:
             pulled.append(os.path.join(target, os.path.basename(path)))
         else:
             print(f"[WARN] Could not copy {path}")
-    return pulled
+            failed += 1
+    return failed, pulled
 
 
-def push(name, dry_run):
-    """Send the drivers, configurations and tests back into the container."""
+def do_push(name, args):
+    """Send this checkout's scripts, configurations and benchmarks in."""
     spec = CONTAINERS[name]
-    items = list(spec["push"])
-    for folder, exts, dest in spec.get("push_globs", []):
-        base = os.path.join(REPO, folder)
-        if os.path.isdir(base):
-            items += [(os.path.join(folder, f), dest)
-                      for f in sorted(os.listdir(base))
-                      if f.endswith(exts)]
-
-    print(f"\n=== {name}: pushing {len(items)} item(s) ===")
+    print(f"\n=== {name}: pushing into {spec['root']} ===")
     failed = 0
-    for rel, dest in items:
+    for rel, dest in spec["push"]:
         source = os.path.join(REPO, rel)
         if not os.path.exists(source.rstrip("/.")):
-            print(f"[WARN] {rel} does not exist here, skipped")
+            print(f"[WARN] {rel} is not here, skipped")
+            failed += 1
             continue
         print(f"[INFO] {rel} -> {name}:{dest}")
-        if dry_run:
+        if args.dry_run:
             continue
-        # The destination folder may not exist yet in a hand-made container.
-        docker(["exec", name, "mkdir", "-p", os.path.dirname(dest.rstrip("/"))
-                or "/"], capture_output=True)
+        # A destination naming a folder has to exist before docker cp.
+        if dest.endswith("/"):
+            docker(["exec", name, "mkdir", "-p", dest], capture_output=True)
         if docker(["cp", source, f"{name}:{dest}"]).returncode != 0:
             print(f"[WARN] Could not copy {rel}")
+            failed += 1
+    for rel, dest in spec["push_dirs"]:
+        source = os.path.join(REPO, rel)
+        if not os.path.isdir(source):
+            print(f"[WARN] {rel} is not here, skipped")
+            failed += 1
+            continue
+        count = len(os.listdir(source))
+        print(f"[INFO] {rel}/ -> {name}:{dest}/  ({count} files)")
+        if args.dry_run:
+            continue
+        # The folder may not exist yet, and docker cp of a folder onto an
+        # existing one nests it, so the contents go in rather than the folder.
+        docker(["exec", name, "mkdir", "-p", dest], capture_output=True)
+        if docker(["cp", source + "/.", f"{name}:{dest}/"]).returncode != 0:
+            print(f"[WARN] Could not copy {rel}/")
             failed += 1
     return failed
 
 
-def make_jsons(name, pulled, jobs):
-    """Run the viewer's batch tracer over each folder that came back."""
-    script = os.path.join(REPO, CONTAINERS[name]["jsons"])
+def shown(path):
+    """A path relative to the repository when it is inside it, absolute when
+    it is not. --out-dir /tmp would otherwise print a row of ../.."""
+    rel = os.path.relpath(path, REPO)
+    return path if rel.startswith("..") else rel
+
+
+def do_trace(name, args, pulled):
+    """Turn every trace that came back into a viewer JSON."""
+    script = os.path.join(REPO, CONTAINERS[name]["tracer"])
     if not os.path.isfile(script):
-        print(f"[WARN] {CONTAINERS[name]['jsons']} not found, "
-              f"skipping --jsons")
-        return
+        print(f"[WARN] {CONTAINERS[name]['tracer']} not found, nothing traced")
+        return 1
+    failed = 0
     for folder in pulled:
         if not os.path.isdir(folder):
             continue
-        print(f"\n[INFO] Tracing {folder}")
-        subprocess.run([sys.executable, script, folder, "-j", str(jobs)])
+        print(f"\n[INFO] Tracing {shown(folder)}")
+        if args.dry_run:
+            continue
+        cmd = [sys.executable, script, folder, "-j", str(args.jobs)]
+        failed += subprocess.run(cmd).returncode != 0
+    return failed
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Copy run output out of the project's containers, and the "
-                    "drivers back in.")
-    # No choices= here: with nargs="*" argparse validates its own empty
-    # default against them and rejects it, so the names are checked below.
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Move files between this checkout and the containers.",
+        epilog="push   send this checkout's scripts, configurations and\n"
+               "       benchmarks into the container\n"
+               "pull   bring the run output back\n"
+               "trace  pull, then turn every trace into a viewer JSON\n"
+               "list   show what the container holds, copy nothing\n"
+               "\n"
+               "The container defaults to both.")
+    parser.add_argument("action", choices=["push", "pull", "trace", "list"],
+                        help="what to do")
     parser.add_argument("container", nargs="*", metavar="CONTAINER",
-                        help=f"Which container to work on, "
-                             f"{' or '.join(sorted(CONTAINERS))}. Defaults to "
-                             f"both")
-    parser.add_argument("--push", action="store_true",
-                        help="Send the drivers, configurations and tests into "
-                             "the container instead of pulling results out")
-    parser.add_argument("--jsons", action="store_true",
-                        help="After pulling, run the viewer's batch tracer "
-                             "over every folder that came back")
-    parser.add_argument("-j", "--jobs", type=int, default=4, metavar="N",
-                        help="Traces to convert at a time with --jsons")
-    parser.add_argument("--out-dir", default=DEFAULT_OUT_DIR, metavar="DIR",
-                        help=f"Where pulled folders land. Defaults to "
-                             f"{DEFAULT_OUT_DIR}/<container>/")
-    parser.add_argument("--all", action="store_true",
-                        help="Pull everything without asking")
+                        help=f"{' or '.join(sorted(CONTAINERS))}, "
+                             f"or left out for both")
     parser.add_argument("-y", "--yes", action="store_true",
-                        help="Alias for --all, and skips the push "
-                             "confirmation")
-    parser.add_argument("--list", action="store_true",
-                        help="Show what each container holds and copy nothing")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="With --push, name every file without copying it")
+                        help="do not ask: take every folder, start a stopped "
+                             "container")
+    parser.add_argument("-n", "--dry-run", action="store_true",
+                        help="say what would happen, copy nothing")
+    parser.add_argument("-j", "--jobs", type=int, default=4, metavar="N",
+                        help="traces to convert at a time with trace "
+                             "(default 4)")
+    parser.add_argument("--out-dir", default=DEFAULT_OUT_DIR, metavar="DIR",
+                        help=f"where pulled folders land. Defaults to "
+                             f"{DEFAULT_OUT_DIR}/<container>/")
     args = parser.parse_args()
+    
+    sys.stdout.reconfigure(line_buffering=True)
 
-    probe = subprocess.run(["which", "docker"], capture_output=True)
-    if probe.returncode != 0:
+    if subprocess.run(["which", "docker"],
+                      capture_output=True).returncode != 0:
         print("[ERROR] docker is not on PATH")
         return 2
 
@@ -312,43 +393,36 @@ def main():
               f"Known: {', '.join(sorted(CONTAINERS))}")
         return 2
     names = args.container or sorted(CONTAINERS)
+
     missing = [n for n in names if container_exists(n) is False]
     if missing:
         print(f"[ERROR] No container named {', '.join(missing)}. "
               f"See the README for how to create one.")
         names = [n for n in names if n not in missing]
+    names = [n for n in names if ensure_running(n, args.yes)]
     if not names:
         return 2
 
-    if args.push:
-        if not (args.yes or args.dry_run):
-            print(f"[INFO] This overwrites the drivers inside "
-                  f"{', '.join(names)} with the ones in this checkout.")
-            try:
-                if input("  Continue? [y/N] ").strip().lower() not in ("y",
-                                                                      "yes"):
-                    return 0
-            except (EOFError, KeyboardInterrupt):
-                print()
-                return 0
-        return 1 if sum(push(n, args.dry_run) for n in names) else 0
-
-    out_dir = os.path.abspath(args.out_dir)
-    total = []
-    names = [n for n in names if ensure_running(n, args.yes)]
+    failed, pulled = 0, []
     for name in names:
-        total += pull(name, out_dir, args.all or args.yes, args.list)
-    if args.list:
-        return 0
-    if not total:
-        print("\n[INFO] Nothing copied")
-        return 0
-    print(f"\n[INFO] {len(total)} folder(s) now under {out_dir}")
-    if args.jsons:
-        for name in names:
-            mine = [p for p in total if f"{os.sep}{name}{os.sep}" in p]
-            make_jsons(name, mine, args.jobs)
-    return 0
+        if args.action == "list":
+            failed += do_list(name, args)
+        elif args.action == "push":
+            failed += do_push(name, args)
+        else:
+            hurt, got = do_pull(name, args)
+            failed += hurt
+            if args.action == "trace":
+                failed += do_trace(name, args, got)
+            pulled += got
+
+    if args.action in ("pull", "trace"):
+        if pulled:
+            print(f"\n[INFO] {len(pulled)} folder(s) under "
+                  f"{os.path.abspath(args.out_dir)}")
+        elif not args.dry_run:
+            print("\n[INFO] Nothing copied")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

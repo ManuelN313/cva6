@@ -53,7 +53,7 @@ Most of the tree is the standard CORE-V CVA6 layout. The pieces most relevant to
 | `viewers/MinorFlow`                             | The MinorFlow visualizer, as a submodule.                                                          |
 | `viewers/CVA6Flow`                              | The CVA6Flow visualizer, as a submodule.                                                           |
 | `gem5_config_CVA6/`                             | The gem5 configuration matched to CVA6, and the gem5 patch it depends on.                          |
-| `dockerfiles/`                                  | The two image recipes, `serve_viewers.py`, the small HTTP server that puts a viewer in the host's browser, and `docker_sync.py`, which moves files in and out of the containers. |
+| `dockerfiles/`                                  | The two image recipes, `serve_viewers.py`, the small HTTP server that puts a viewer in the host's browser, The container copier is `scripts/docker_sync.py`. |
 | `scripts/check_CVA6_repo.py`                    | Checks this fork's own files: the scripts kept in two places, the calibration tables, the patch, the Dockerfiles, the viewer pages, the links and the formatting. Each viewer has the same tool for itself, `check_MinorFlow_repo.py` and `check_CVA6Flow_repo.py`, sharing this one's helpers and check protocol. |
 | `scripts/clean_CVA6_repo.py`                            | Deletes the `.list`, `.vcd`, `.fst`, traces and `__pycache__` left in this repository, then offers to run each viewer's own cleaner. |
 | `scripts/ignore_big_repo_jsons.py`                            | Lists the tracer JSONs too big for GitHub in `.gitignore`.                                         |
@@ -336,16 +336,36 @@ docker cp gem5:/gem5/CVA6_testing_sweep_results/ ./
 
 A trailing `/.` on the source copies the contents of a folder rather than the folder itself.
 
-`scripts/docker_sync.py` does both directions without the paths. Pulling lists the run-output folders that actually exist, with their sizes and what produced them, and asks which to bring back.
+`scripts/docker_sync.py` does both directions without the paths. Four things to do, one word each, and the container is `cva6`, `gem5`, or left out for both:
 
 ```bash
-python3 scripts/docker_sync.py                # ask, both containers
-python3 scripts/docker_sync.py gem5 --jsons   # pull, then trace what came back
-python3 scripts/docker_sync.py --list         # show, copy nothing
-python3 scripts/docker_sync.py --push gem5    # send the drivers and tests in
+python3 scripts/docker_sync.py push      # send this checkout in
+python3 scripts/docker_sync.py pull      # bring the results back
+python3 scripts/docker_sync.py trace     # pull, then make the viewer JSONs
+python3 scripts/docker_sync.py list      # show what is in there, copy nothing
+
+python3 scripts/docker_sync.py push gem5 # one container
+python3 scripts/docker_sync.py trace -y  # take every folder without asking
+python3 scripts/docker_sync.py push -n   # say what would be copied
 ```
 
-Pulled folders land in `container_results/<container>/`. `--push` is the one to remember: a container keeps its own copy of every driver, so editing `run_gem5.py` here changes nothing inside until it is pushed.
+**push** sends, per container:
+
+| What | Where it lands |
+| --- | --- |
+| The drivers, the sweeps and the cleaner | the container root, `/gem5` or `/cva6` |
+| The gem5 configurations and `MinorCPU_CVA6.patch` | `/gem5/` |
+| The CVA6Flow configuration package | `/cva6/core/include/`, which is where the build reads it |
+| The calibration benchmarks | `benchmarks/` |
+| The viewer's teaching set | `MinorFlow_benchmarks/` or `CVA6Flow_benchmarks/` |
+| The viewer page, its tracer and its batch tracer | `viewers/<viewer>/` |
+| `serve_viewers.py` | the container root |
+
+It is the one to remember: a container keeps its own copy of everything, so editing `run_gem5.py` here changes nothing inside until it is pushed.
+
+The configuration package is the CVA6Flow one, which carries the seventeen-configuration table and `CVA6_CONFIG_SEL`, and it replaces the live package. Its default selector is `CFG_BASELINE`, so a plain run still gets the baseline, and `run_CVA6Flow_sweep.py` reads the file once before it writes, so source and live being the same file is safe.
+
+**pull** lists the run-output folders that actually exist, with their sizes and what produced them, and asks which to bring back. That list comes from the cleaners, so it cannot fall out of step with them. Folders land in `container_results/<container>/`. **trace** is `pull` followed by the viewer's batch tracer over whatever came back.
 
 ## Working with the CVA6 image
 
