@@ -88,8 +88,17 @@ KNOWN_DUPLICATE_TESTS = {
 }
 
 # The style is 79 columns, which most of the tree already keeps.
+# Scripts named in our text that are not ours: gem5's and CVA6's own sources,
+# and the placeholders an example needs. Anything else that does not exist is a
+# rename someone did not finish.
+EXTERNAL_SCRIPTS = {
+    "BaseMinorCPU.py", "BranchPredictor.py", "Cache.py",   # gem5 sources
+    "cva6.py",                                             # verif/sim driver
+    "my_config.py",                                        # an example name
+}
+
 MAX_COLS = 79
-WIDTH_BUDGET = 309
+WIDTH_BUDGET = 291
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +114,9 @@ def owned(pattern=None):
             continue
         if not os.path.isdir(full):
             continue
-        # A submodule has its own index, so ask the right repository. Its
-        # .git is a file rather than a directory, which is why this is exists
-        # and not isdir: with isdir the submodules were skipped entirely.
+        # A submodule has its own index, so ask the right repository.
+        # Its .git is a file rather than a directory, which is why this
+        # is exists and not isdir: isdir skipped the submodules whole.
         inner = full if os.path.exists(os.path.join(full, ".git")) else REPO
         rel = "." if inner == full else root
         # --others --exclude-standard adds files not yet staged, respecting
@@ -116,8 +125,8 @@ def owned(pattern=None):
         r = subprocess.run(["git", "-C", inner, "ls-files", "--cached",
                             "--others", "--exclude-standard", rel],
                            capture_output=True, text=True)
-        # Submodule paths come back relative to the submodule, so they need
-        # the prefix to be usable here. A root of "." already is the repository.
+        # Submodule paths come back relative to the submodule, so they
+        # need the prefix here. A root of "." already is the repository.
         prefix = root + "/" if inner == full and root != "." else ""
         out += [prefix + p for p in r.stdout.split()]
     # git ls-files reports the index, which still carries files deleted in the
@@ -414,6 +423,24 @@ def check_links():
     return bad
 
 
+def check_script_names():
+    """Every script named in our docs, Dockerfiles and scripts exists."""
+    import re
+    known = {os.path.basename(p) for p in owned(".py")}
+    bad = []
+    for rel in owned():
+        if not rel.endswith((".md", ".py", "Dockerfile")):
+            continue
+        for match in re.finditer(r"(?<![\w>])([A-Za-z][A-Za-z0-9_]*\.py)\b",
+                                 read(rel)):
+            name = match.group(1)
+            if name in known or name in EXTERNAL_SCRIPTS:
+                continue
+            line = read(rel)[:match.start()].count("\n") + 1
+            bad.append(f"{rel}:{line}: {name} does not exist here")
+    return sorted(set(bad))
+
+
 def check_dockerfiles():
     """Every COPY source in the images exists.
 
@@ -469,6 +496,7 @@ CHECKS = (
     ("patch-hunks", check_patch_hunks),
     ("viewer-js", check_viewer_js),
     ("dockerfiles", check_dockerfiles),
+    ("script-names", check_script_names),
     ("links", check_links),
     ("formatting", check_formatting),
 )
