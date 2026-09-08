@@ -16,7 +16,22 @@ import sys
 import shutil
 import argparse
 
-REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+def repo_root():
+    """The repository this script sits in, found by walking up to the nearest
+    .git. The script lives in scripts/, so counting parents would be one more
+    thing to fix the next time the tree moves."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = here
+    while True:
+        if os.path.exists(os.path.join(path, ".git")):
+            return path
+        parent = os.path.dirname(path)
+        if parent == path:
+            return here
+        path = parent
+
+
+REPO_ROOT = repo_root()
 
 DEFAULT_DEST = "cva6_files"
 

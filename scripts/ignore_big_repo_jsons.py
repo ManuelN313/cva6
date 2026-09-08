@@ -3,11 +3,11 @@
 warns above 50 MiB and refuses above 100 MiB, and git has no size test, so the
 measuring happens here. A tracked file is reported rather than ignored.
 
-  python3 ignore_big_json.py             # list, then ask
-  python3 ignore_big_json.py -y          # write without asking
-  python3 ignore_big_json.py --dry-run   # list only
-  python3 ignore_big_json.py -l 20       # a different threshold, in MiB
-  python3 ignore_big_json.py --prune     # also drop entries no longer oversized
+  python3 ignore_big_repo_jsons.py             # list, then ask
+  python3 ignore_big_repo_jsons.py -y          # write without asking
+  python3 ignore_big_repo_jsons.py --dry-run   # list only
+  python3 ignore_big_repo_jsons.py -l 20       # a different threshold, in MiB
+  python3 ignore_big_repo_jsons.py --prune     # also drop entries no longer oversized
 """
 import os
 import re
@@ -22,9 +22,14 @@ SEARCH_DIRS = [
 ]
 
 # The viewers keep their own .gitignore, so their own copy of this script.
+# Each viewer has its own .gitignore and its own copy of this tool, named
+# after the repository it acts on so no two scripts in the project share a
+# name. This one only points at them.
 SUBMODULES = [
-    os.path.join("viewers", "MinorFlow"),
-    os.path.join("viewers", "CVA6Flow"),
+    os.path.join("viewers", "MinorFlow",
+                 "scripts", "ignore_big_MinorFlow_jsons.py"),
+    os.path.join("viewers", "CVA6Flow",
+                 "scripts", "ignore_big_CVA6Flow_jsons.py"),
 ]
 
 # The tracer output: the viewer JSON, and the .js that wraps it for local
@@ -38,7 +43,22 @@ DEFAULT_LIMIT_MIB = 50
 BEGIN = "## BEGIN oversized JSONs"
 END = "## END oversized JSONs"
 
-REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+def repo_root():
+    """The repository this script sits in, found by walking up to the nearest
+    .git. The script lives in scripts/, so counting parents would be one more
+    thing to fix the next time the tree moves."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    path = here
+    while True:
+        if os.path.exists(os.path.join(path, ".git")):
+            return path
+        parent = os.path.dirname(path)
+        if parent == path:
+            return here
+        path = parent
+
+
+REPO_ROOT = repo_root()
 GITIGNORE = os.path.join(REPO_ROOT, ".gitignore")
 
 
@@ -260,11 +280,11 @@ def main():
             print(f"           git rm --cached {rel}")
         print()
 
-    here = [s for s in SUBMODULES if os.path.isdir(os.path.join(REPO_ROOT, s))]
+    here = [s for s in SUBMODULES if os.path.isfile(os.path.join(REPO_ROOT, s))]
     if here:
         print("[INFO] The viewers keep their own .gitignore. For those, run:")
         for sub in here:
-            print(f"           python3 {sub}/ignore_big_json.py")
+            print(f"           python3 {sub}")
         print()
 
     if hand_written:
