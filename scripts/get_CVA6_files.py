@@ -6,10 +6,10 @@ tree and written with variables the tools expand. This resolves them and copies
 every file into a single directory, which is what the RTL readers and the
 tracer's signal search expect.
 
-  python3 get_cva6_files.py              # copy into cva6_files/
-  python3 get_cva6_files.py -o rtl       # a different destination
-  python3 get_cva6_files.py --dry-run    # list what would be copied
-  python3 get_cva6_files.py -v           # name every file as it is copied
+  python3 get_CVA6_files.py              # copy into cva6_files/
+  python3 get_CVA6_files.py -o rtl       # a different destination
+  python3 get_CVA6_files.py --dry-run    # list what would be copied
+  python3 get_CVA6_files.py -v           # name every file as it is copied
 """
 import os
 import sys

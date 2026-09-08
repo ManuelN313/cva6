@@ -6,11 +6,11 @@ reads, CVA6 writes a VCD that CVA6Flow reads, and each viewer owns its tracer.
 This walks the fork, hands each trace to the right one, and then offers to run
 each submodule's own batch script over its own repository.
 
-    python3 scripts/create_all_repo_jsons.py            # the whole checkout
-    python3 scripts/create_all_repo_jsons.py -j 8
-    python3 scripts/create_all_repo_jsons.py --force    # redo existing JSONs
-    python3 scripts/create_all_repo_jsons.py --dry-run  # list, convert nothing
-    python3 scripts/create_all_repo_jsons.py --no-submodules
+    python3 scripts/create_all_CVA6_repo_jsons.py            # the whole checkout
+    python3 scripts/create_all_CVA6_repo_jsons.py -j 8
+    python3 scripts/create_all_CVA6_repo_jsons.py --force    # redo existing JSONs
+    python3 scripts/create_all_CVA6_repo_jsons.py --dry-run  # list, convert nothing
+    python3 scripts/create_all_CVA6_repo_jsons.py --no-submodules
 """
 import argparse
 import os
