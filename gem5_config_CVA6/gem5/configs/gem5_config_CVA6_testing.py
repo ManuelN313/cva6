@@ -44,8 +44,8 @@ from m5.objects import (  # type: ignore
 # Calibration harness for the CVA6 gem5 MinorCPU configuration.
 #
 # CVA6 calibration harness for UNMODIFIED gem5 v25.0.0.1. TEST 1 is the frozen
-# CPU-side baseline, every other TEST a single-knob perturbation, grouped by the
-# part of the machine it touches, front of the pipeline first.
+# CPU-side baseline, every other TEST a single-knob perturbation,
+# grouped by the part of the machine it touches, front of the pipeline first.
 #
 # TESTS 1 to 39 are the whole table here, and carry the same numbers as in
 # gem5_config_CVA6_Patch_testing.py. That file continues at TEST 40 with the
