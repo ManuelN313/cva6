@@ -6,12 +6,12 @@ The gem5 MinorCPU configuration matched to CVA6, and the patch it depends on.
 
 | Path | What it is |
 | --- | --- |
-| `gem5/gem5_config_CVA6.py` | The matched configuration, for a **stock** gem5 |
-| `gem5/gem5_config_CVA6_Patch.py` | The matched configuration, for a **patched** gem5 |
-| `gem5/gem5_config_CVA6_testing.py` | The calibration harness: the stock core as a table of single-knob perturbations, `TEST 1` to `TEST 39` |
-| `gem5/gem5_config_CVA6_Patch_testing.py` | The same 39 entries under the same numbers, then the ones that need the patch, `TEST 40` to `TEST 95` and `TEST 99`. This is the sweep's `DEFAULT_CONFIG` |
-| `gem5/run_CVA6_testing_sweep.py` | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep) |
-| `gem5/MinorCPU_CVA6.patch` | Every gem5 change the patched configuration depends on, CPU, front end and caches, in one verified file |
+| `gem5/configs/gem5_config_CVA6.py` | The matched configuration, for a **stock** gem5 |
+| `gem5/configs/gem5_config_CVA6_Patch.py` | The matched configuration, for a **patched** gem5 |
+| `gem5/configs/gem5_config_CVA6_testing.py` | The calibration harness: the stock core as a table of single-knob perturbations, `TEST 1` to `TEST 39` |
+| `gem5/configs/gem5_config_CVA6_Patch_testing.py` | The same 39 entries under the same numbers, then the ones that need the patch, `TEST 40` to `TEST 95` and `TEST 99`. This is the sweep's `DEFAULT_CONFIG` |
+| `../scripts/run_CVA6_testing_sweep.py` | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep) |
+| `gem5/configs/MinorCPU_CVA6.patch` | Every gem5 change the patched configuration depends on, CPU, front end and caches, in one verified file |
 | `gem5/tests/` | The gem5 tests side |
 | `CVA6/tests/` | The CVA6 tests side |
 
@@ -19,7 +19,7 @@ The gem5 MinorCPU configuration matched to CVA6, and the patch it depends on.
 
 The other two, `fp_divsqrt_probe` and `fp_divsqrt_probe2`, are **not** suite members and are left out of every figure below. They are diagnostic programs written to measure one limitation rather than to be matched: each drives the FP divider with operands chosen so the hardware's short path fires and the model's general law does not, which is what turns that divergence into a number instead of a suspicion.
 
-They all live in [benchmarks/gem5/](../benchmarks/gem5/) and [benchmarks/CVA6/](../benchmarks/CVA6/).
+They all live in [gem5/benchmarks/](gem5/benchmarks/) and [CVA6/benchmarks/](CVA6/benchmarks/).
 
 ## Results
 
@@ -252,14 +252,14 @@ scons build/RISCV_PATCH/gem5.opt -j$(nproc)
 
 That rebuild turns `build/RISCV_PATCH` back into a stock binary, which is rarely what you want. If a stock binary is all you need, `build/RISCV` already is one and nothing has to be rebuilt.
 
-[`run_gem5.py`](../benchmarks/gem5/run_gem5.py) takes `--variant stock`, the default, or `--variant patch`, which picks the binary and the overhead profile together and names the build in the table header. `--build` runs any other build directory without changing the profile.
+[`run_gem5.py`](../viewers/MinorFlow/scripts/run_gem5.py) takes `--variant stock`, the default, or `--variant patch`, which picks the binary and the overhead profile together and names the build in the table header. `--build` runs any other build directory without changing the profile.
 
 Since every added parameter defaults off, the patched binary running `gem5_config_CVA6.py` should reproduce the stock binary exactly. Diffing the two `stats.txt` files is the test of that, and any line that differs is a mechanism leaking when it should be inert. `gem5_config_CVA6_Patch.py --no-patch` is the same test from the other direction, holding the configuration fixed and turning the mechanisms off.
 
 ### TO DO
 
 - **No entry isolates the direct-target knob against today's stack.** `TEST 58`, "production minus direct targets", was written before the RAS model existed, so its era's production stack had no unrecovered RAS and its empty `bp_overrides` was right then. `--no-cva6-direct-targets` no longer implies `--no-ras-decay`, so measuring that switch against the current stack needs a row carrying `rasNoRecovery` without `directTargetsFromDecode`. Nothing is wrong in the table as it stands, it just no longer covers that one ablation.
-- **Measure the assembly overhead profile on a patched build.** `OVERHEAD_SUITES["config"]["patch"]` in [run_gem5.py](../benchmarks/gem5/run_gem5.py) has identical numbers for C and assembly, on all eight entries. The stock profile differs between the two languages on four of them, and the two paths link different startup code, so one measurement was most likely copied rather than two taken. It moves the NET figures on every assembly benchmark if it is wrong.
+- **Measure the assembly overhead profile on a patched build.** `OVERHEAD_SUITES["config"]["patch"]` in [run_gem5.py](../viewers/MinorFlow/scripts/run_gem5.py) has identical numbers for C and assembly, on all eight entries. The stock profile differs between the two languages on four of them, and the two paths link different startup code, so one measurement was most likely copied rather than two taken. It moves the NET figures on every assembly benchmark if it is wrong.
 
 ### New parameters
 
