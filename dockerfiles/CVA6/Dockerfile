@@ -67,7 +67,7 @@ COPY . /cva6/
 RUN rm -rf /cva6/gem5_config_CVA6/gem5 \
            /cva6/viewers/MinorFlow \
            /cva6/dockerfiles \
-    && rm -f /cva6/scripts/get_cva6_files.py \
+    && rm -f /cva6/scripts/get_CVA6_files.py \
              /cva6/scripts/docker_sync.py \
              /cva6/scripts/run_CVA6_testing_sweep.py
 
