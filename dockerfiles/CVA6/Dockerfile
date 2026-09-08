@@ -65,22 +65,23 @@ COPY . /cva6/
 # the gem5 configurations, the patch, the gem5 benchmarks and the MinorFlow
 # viewer along for no reason and make /cva6 read as something it is not.
 RUN rm -rf /cva6/gem5_config_CVA6/gem5 \
-           /cva6/benchmarks/gem5 \
            /cva6/viewers/MinorFlow \
            /cva6/dockerfiles \
-    && rm -f /cva6/clean_CVA6_repo.py /cva6/ignore_big_json.py \
-             /cva6/get_cva6_files.py
+    && rm -f /cva6/scripts/get_cva6_files.py \
+             /cva6/scripts/docker_sync.py \
+             /cva6/scripts/run_CVA6_testing_sweep.py
 
 # The drivers run from /cva6, which is what the README documents and what the
 # hardcoded root expects, so they sit there rather than two folders down.
-RUN cp /cva6/benchmarks/CVA6/run_CVA6.py \
-       /cva6/benchmarks/CVA6/run_all_CVA6_benchmarks.py \
-       /cva6/benchmarks/CVA6/clean_CVA6_runs.py /cva6/ \
-    && mkdir -p /cva6/benchmarks_cva6 \
-    && cp /cva6/benchmarks/CVA6/*.c /cva6/benchmarks/CVA6/*.S /cva6/benchmarks_cva6/ \
-    && rm -rf /cva6/benchmarks \
-    && mv /cva6/benchmarks_cva6 /cva6/benchmarks \
-    && chmod +x /cva6/*.py /cva6/viewers/CVA6Flow/*.py
+RUN cp /cva6/viewers/CVA6Flow/scripts/run_CVA6.py \
+       /cva6/viewers/CVA6Flow/scripts/run_all_CVA6_benchmarks.py \
+       /cva6/viewers/CVA6Flow/scripts/clean_CVA6_runs.py /cva6/ \
+    && mkdir -p /cva6/benchmarks \
+    && cp /cva6/gem5_config_CVA6/CVA6/benchmarks/*.c \
+          /cva6/gem5_config_CVA6/CVA6/benchmarks/*.S /cva6/benchmarks/ \
+    && chmod +x /cva6/*.py /cva6/scripts/*.py \
+                /cva6/viewers/CVA6Flow/*.py \
+                /cva6/viewers/CVA6Flow/scripts/*.py
 
 COPY dockerfiles/serve_viewers.py /cva6/serve_viewers.py
 

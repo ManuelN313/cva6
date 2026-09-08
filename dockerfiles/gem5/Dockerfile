@@ -48,27 +48,30 @@ RUN scons defconfig build/RISCV build_opts/RISCV \
     && scons build/RISCV/gem5.opt -j${JOBS}
 
 # ---- the patch, then the second build --------------------------------------
-COPY gem5_config_CVA6/gem5/MinorCPU_CVA6.patch /gem5/MinorCPU_CVA6.patch
+COPY gem5_config_CVA6/gem5/configs/MinorCPU_CVA6.patch /gem5/MinorCPU_CVA6.patch
 RUN git apply --check MinorCPU_CVA6.patch \
     && git apply MinorCPU_CVA6.patch \
+    && sha1sum MinorCPU_CVA6.patch > /gem5/.built_patch_sha1 \
     && scons defconfig build/RISCV_PATCH build_opts/RISCV \
     && scons build/RISCV_PATCH/gem5.opt -j${JOBS}
 
 # ---- what this project adds -------------------------------------------------
 # Copied last, so editing a configuration or a benchmark rebuilds one small
 # layer rather than gem5.
-COPY benchmarks/gem5/run_gem5.py                /gem5/
-COPY benchmarks/gem5/run_all_gem5_benchmarks.py /gem5/
-COPY benchmarks/gem5/clean_gem5_runs.py         /gem5/
-COPY gem5_config_CVA6/gem5/*.py                 /gem5/
-COPY viewers/MinorFlow/                         /gem5/viewers/MinorFlow/
-COPY dockerfiles/serve_viewers.py               /gem5/serve_viewers.py
+COPY viewers/MinorFlow/scripts/run_gem5.py                /gem5/
+COPY viewers/MinorFlow/scripts/run_all_gem5_benchmarks.py /gem5/
+COPY viewers/MinorFlow/scripts/clean_gem5_runs.py         /gem5/
+COPY gem5_config_CVA6/gem5/configs/*.py                   /gem5/
+COPY viewers/MinorFlow/                                   /gem5/viewers/MinorFlow/
+COPY dockerfiles/serve_viewers.py                         /gem5/serve_viewers.py
 
 # The tests themselves, in the folder run_all_gem5_benchmarks.py looks in by
 # default. Only the programs: the drivers above are the ones that run them.
-COPY benchmarks/gem5/*.c benchmarks/gem5/*.S /gem5/benchmarks/
+COPY gem5_config_CVA6/gem5/benchmarks/*.c \
+     gem5_config_CVA6/gem5/benchmarks/*.S /gem5/benchmarks/
 
-RUN chmod +x /gem5/*.py /gem5/viewers/MinorFlow/*.py
+RUN chmod +x /gem5/*.py /gem5/viewers/MinorFlow/*.py \
+             /gem5/viewers/MinorFlow/scripts/*.py
 
 # The viewers are served rather than opened in the container
 EXPOSE 8000
