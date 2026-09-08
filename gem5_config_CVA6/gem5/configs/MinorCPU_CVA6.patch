@@ -156,15 +156,27 @@ index dd427b7..6993739 100644
  }
  
  inline ThreadID
-@@ -327,11 +341,31 @@ Fetch1::moveFromRequestsToTransfers(FetchRequestPtr request)
+@@ -327,11 +341,43 @@ Fetch1::moveFromRequestsToTransfers(FetchRequestPtr request)
      transfers.push(request);
  }
  
 +bool
 +Fetch1::icacheReady()
 +{
-+    auto *peer = dynamic_cast<ResponsePort *>(&icachePort.getPeer());
-+    return !peer || peer->acceptsTimingReq();
++    /* Resolved once. The peer does not change after binding, and this is
++     * called every cycle Fetch1 wants a line. */
++    if (!icachePeerResolved) {
++        icachePeer = dynamic_cast<ResponsePort *>(&icachePort.getPeer());
++        icachePeerResolved = true;
++        /* Without a ResponsePort peer there is no readiness to read, so
++         * the mechanism would quietly do nothing. Say so rather than
++         * reporting a run that silently lost it. */
++        warn_if(!icachePeer,
++            "%s: fetch1WaitsForIcache is on but the icache peer is not a "
++            "ResponsePort, so line holding is inactive for this run\n",
++            name());
++    }
++    return !icachePeer || icachePeer->acceptsTimingReq();
 +}
 +
  bool
@@ -188,7 +200,7 @@ index dd427b7..6993739 100644
      if (icachePort.sendTimingReq(request->packet)) {
          /* Invalidate the fetch_requests packet so we don't
           *  accidentally fail to deallocate it (or use it!)
-@@ -381,18 +415,33 @@ void
+@@ -381,18 +415,38 @@ void
  Fetch1::popAndDiscard(FetchQueue &queue)
  {
      if (!queue.empty()) {
@@ -215,8 +227,13 @@ index dd427b7..6993739 100644
 +{
 +    /* A killed line holds its queue slot until it drains but has already
 +     * given its Fetch2 reservation back, so it must not count against the
-+     * fetch limit. Wrapping here would wedge the front end silently. */
-+    assert(killedInFlight <= numQueuedFetches());
++     * fetch limit. Both are unsigned, so a broken invariant wraps and the
++     * fetch limit is never met again. panic_if survives the fast build,
++     * where a plain assert would let that wedge pass silently. */
++    panic_if(killedInFlight > numQueuedFetches(),
++        "%s: killedInFlight %u exceeds queued %u, the fetch limit would "
++        "wrap and stall the front end permanently\n",
++        name(), killedInFlight, numQueuedFetches());
 +    return numQueuedFetches() - killedInFlight;
 +}
 +
@@ -283,12 +300,16 @@ diff --git a/src/cpu/minor/fetch1.hh b/src/cpu/minor/fetch1.hh
 index b65bb70..33ad324 100644
 --- a/src/cpu/minor/fetch1.hh
 +++ b/src/cpu/minor/fetch1.hh
-@@ -224,6 +224,12 @@ class Fetch1 : public Named
+@@ -224,6 +224,16 @@ class Fetch1 : public Named
      /** Maximum number of fetches allowed in flight (in queues or memory) */
      unsigned int fetchLimit;
  
 +    /** Hold a line at the icache's ready line rather than being refused */
 +    const bool waitsForIcache;
++
++    /* Peer resolved on first use and cached, see icacheReady(). */
++    mutable ResponsePort *icachePeer = nullptr;
++    mutable bool icachePeerResolved = false;
 +
 +    /** Release killed lines' slots at the redirect, not at their return */
 +    const bool killsOnRedirect;
@@ -2824,7 +2845,7 @@ new file mode 100644
 index 0000000..8372163
 --- /dev/null
 +++ b/src/mem/cache/replacement_policies/hpdcache_plru_rp.hh
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,139 @@
 +/*
 + * Copyright (c) 2026 Manuel Nieto
 + * All rights reserved.
@@ -2854,9 +2875,16 @@ index 0000000..8372163
 + */
 +
 +/*
-+ * HPDcachePLRU: a transcription of the CVA6 HPDcache victim policy
-+ * (hpdcache_victim_plru.sv, read in full) as a gem5 replacement
-+ * policy. The policy is bit-PLRU with a four-tier prioritised victim
++ * HPDcachePLRU: a transcription of hpdcache_victim_plru.sv as a gem5
++ * replacement policy.
++ *
++ * NOT the policy the calibration target uses. cv64a6_imafdc_sv39_hpdcache_wb
++ * configures HPDCACHE_VICTIM_RANDOM, so this file transcribes the generate
++ * branch that build does not elaborate. It is kept for comparison only.
++ * For a CVA6-matching D-cache use HPDcacheRandomRP, which was validated
++ * against the RTL victim stream on 7,406 of 7,406 fresh selections.
++ *
++ * The policy is bit-PLRU with a four-tier prioritised victim
 + * cascade, and every behaviour below carries a V-rule number plus its
 + * RTL line citation. There are no tunable parameters: num_ways proxies
 + * the cache associativity.
