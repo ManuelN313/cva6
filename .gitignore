@@ -71,3 +71,6 @@ verilator_changes/ddr3_memory
 # Temporal
 /gem5_config_CVA6/CVA6/tests/
 /gem5_config_CVA6/gem5/tests/
+
+# docker_sync.py pull
+container_results/
