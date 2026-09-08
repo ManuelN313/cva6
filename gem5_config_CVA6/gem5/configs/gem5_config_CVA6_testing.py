@@ -18,7 +18,6 @@ from m5.objects import (  # type: ignore
     LocalBP,
     TournamentBP,
     LRURP,
-    TreePLRURP,
     RandomRP,
     MinorFUPool,
     MinorDefaultIntFU,
@@ -158,7 +157,7 @@ TESTS = {
     24: ("atomic occupancy removed",     {}, "16KiB", "32KiB", {}, {}, "50MHz", "0ns",
          {"fuVariant": "no_occupancy"}),
     # --- data cache ---
-    25: ("L1D PLRU->LRU",                {}, "16KiB", "32KiB", {"replacement_policy": LRURP()}, {}, "50MHz", "0ns", {}),
+    25: ("L1D random->LRU",              {}, "16KiB", "32KiB", {"replacement_policy": LRURP()}, {}, "50MHz", "0ns", {}),
     26: ("response_latency 4->5",        {}, "16KiB", "32KiB", {"response_latency": 5}, {}, "50MHz", "0ns", {}),
     27: ("response_latency 4->6",        {}, "16KiB", "32KiB", {"response_latency": 6}, {}, "50MHz", "0ns", {}),
     28: ("response_latency 4->3",        {}, "16KiB", "32KiB", {"response_latency": 3}, {}, "50MHz", "0ns", {}),
@@ -699,7 +698,7 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
             self.l1dcaches[i].sequential_access = False
             self.l1dcaches[i].writeback_clean = False
             self.l1dcaches[i].prefetcher = NULL
-            self.l1dcaches[i].replacement_policy = TreePLRURP()
+            self.l1dcaches[i].replacement_policy = RandomRP()
 
             for key, value in self._icache_overrides.items():
                 setattr(self.l1icaches[i], key, value)

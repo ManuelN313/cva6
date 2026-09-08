@@ -17,7 +17,6 @@ from gem5.resources.resource import BinaryResource  # type: ignore
 from m5.objects import (  # type: ignore
     LocalBP,
     LRURP,
-    TreePLRURP,
     RandomRP,
     MinorFUPool,
     MinorDefaultFloatSimdFU,
@@ -375,7 +374,7 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
             self.l1dcaches[i].sequential_access = False
             self.l1dcaches[i].writeback_clean = False
             self.l1dcaches[i].prefetcher = NULL
-            self.l1dcaches[i].replacement_policy = TreePLRURP()
+            self.l1dcaches[i].replacement_policy = RandomRP()
 
 
 parser = argparse.ArgumentParser(description="CVA6 replication on gem5")

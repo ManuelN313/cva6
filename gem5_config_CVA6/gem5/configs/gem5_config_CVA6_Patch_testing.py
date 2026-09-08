@@ -22,7 +22,6 @@ from m5.objects import (  # type: ignore
     LocalBP,
     TournamentBP,
     LRURP,
-    TreePLRURP,
     RandomRP,
     MinorFUPool,
     MinorDefaultIntFU,
@@ -1444,7 +1443,7 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
             self.l1dcaches[i].sequential_access = False
             self.l1dcaches[i].writeback_clean = False
             self.l1dcaches[i].prefetcher = NULL
-            self.l1dcaches[i].replacement_policy = TreePLRURP()
+            self.l1dcaches[i].replacement_policy = RandomRP()
 
             for key, value in self._icache_overrides.items():
                 setattr(self.l1icaches[i], key, value)

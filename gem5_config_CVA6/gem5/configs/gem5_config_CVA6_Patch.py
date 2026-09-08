@@ -395,6 +395,7 @@ class CVA6Processor(BaseCPUProcessor):
 class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
     def __init__(self, l1d_size, l1i_size, evict_on_allocate=True,
                  victim_readout_stall=True, cva6_victim_policy=True,
+                 l1d_plru=False,
                  victim_readable_until_fill=True, fill_phase=True,
                  fence_flush=True, icache_policy=True,
                  window_charge=True, icache_structure=True):
@@ -403,6 +404,7 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
         self._evict_on_allocate = evict_on_allocate
         self._victim_readout_stall = victim_readout_stall
         self._cva6_victim_policy = cva6_victim_policy
+        self._l1d_plru = l1d_plru
         self._victim_readable_until_fill = victim_readable_until_fill
         self._fill_phase = fill_phase
         self._window_charge = window_charge
@@ -462,10 +464,12 @@ class CVA6CacheHierarchy(PrivateL1CacheHierarchy):
 
             # Transcribed memory mechanisms, L1D only: the eviction story
             # is data-side and the read-only L1I produces no writebacks.
-            if self._cva6_victim_policy:
+            if self._l1d_plru:
+                self.l1dcaches[i].replacement_policy = TreePLRURP()
+            elif self._cva6_victim_policy:
                 self.l1dcaches[i].replacement_policy = HPDcacheRandomRP()
             else:
-                self.l1dcaches[i].replacement_policy = TreePLRURP()
+                self.l1dcaches[i].replacement_policy = RandomRP()
             self.l1dcaches[i].evict_on_allocate = self._evict_on_allocate
             self.l1dcaches[i].victim_readout_stall = \
                 self._victim_readout_stall
@@ -528,8 +532,13 @@ parser.add_argument("--no-evict-on-allocate", action="store_true",
 parser.add_argument("--no-victim-readout-stall", action="store_true",
                     help="Do not charge the 2-cycle dirty victim readout")
 parser.add_argument("--no-cva6-victim-policy", action="store_true",
-                    help="Use gem5 TreePLRU instead of the transcribed "
-                         "HPDcache random policy")
+                    help="Use gem5 RandomRP instead of the transcribed "
+                         "HPDcache LFSR. Same policy family as the hardware, "
+                         "so this isolates the generator")
+parser.add_argument("--l1d-plru", action="store_true",
+                    help="L1D uses gem5 TreePLRU. A counterfactual: the "
+                         "HPDcache PLRU generate branch is not elaborated "
+                         "in cv64a6_imafdc_sv39_hpdcache_wb")
 parser.add_argument("--no-victim-readable-until-fill", action="store_true",
                     help="Make the victim unreachable at allocation instead "
                          "of at its refill")
@@ -616,6 +625,7 @@ cache_hierarchy = CVA6CacheHierarchy(
     evict_on_allocate=evict_on_allocate,
     victim_readout_stall=victim_readout_stall,
     cva6_victim_policy=cva6_victim_policy,
+    l1d_plru=args.l1d_plru,
     victim_readable_until_fill=victim_readable_until_fill,
     fill_phase=fill_phase,
     window_charge=window_charge,
@@ -656,7 +666,8 @@ active = [n for n, on in (
     ("port-model", not args.no_port_model),
     ("evict-on-allocate", evict_on_allocate),
     ("victim-readout-stall", victim_readout_stall),
-    ("cva6-victim-policy", cva6_victim_policy),
+    ("cva6-victim-policy", cva6_victim_policy and not args.l1d_plru),
+    ("l1d-plru-counterfactual", args.l1d_plru),
     ("victim-readable-until-fill", victim_readable_until_fill),
     ("fill-phase", fill_phase),
     ("window-charge", window_charge),
