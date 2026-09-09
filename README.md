@@ -2,7 +2,7 @@
 
 The reference RISC-V core for the FaMAF CVA6 Project, and the starting point for new members.
 
-This repository is a frozen fork of the [OpenHW Group CORE-V CVA6](https://github.com/openhwgroup/cva6), a 64-bit, 6-stage RISC-V processor written in SystemVerilog. It is used as the real-hardware side of an undergraduate thesis at FaMAF, Universidad Nacional de Córdoba, on how closely a gem5 configuration can be made to match a real RISC-V core. The full thesis will be published here after the defence (August 2026).
+This repository is a frozen fork of the [OpenHW Group CORE-V CVA6](https://github.com/openhwgroup/cva6), a 64-bit, 6-stage RISC-V processor written in SystemVerilog. It is used as the real-hardware side of an undergraduate thesis at FaMAF, Universidad Nacional de Córdoba, on how closely a gem5 configuration can be made to match a real RISC-V core. The thesis will be published here once it is defended.
 
 Everything runs inside Docker, so you do not have to install CVA6's or gem5's dependencies on your own machine.
 
