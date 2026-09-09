@@ -111,8 +111,12 @@ def _if(cond, then_expr, else_expr):
     return e
 
 
-def serdivExtraLatency(base=2):
-    """Data-dependent latency of the CVA6 integer divider."""
+def serdivExtraLatency(base=1):
+    """Data-dependent latency of the CVA6 integer divider.
+
+    base is the constant term added to max(bits(a) - bits(b), 0). The only
+    call site passes 1 explicitly, and the two _testing configurations already
+    default to 1."""
     bits_a = _un('timingExprSizeInBits', _src(0))
     bits_b = _un('timingExprSizeInBits', _src(1))
     diff = _bin('timingExprSub', bits_a, bits_b)
