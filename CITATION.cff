@@ -1,14 +1,56 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: >-
+  If you use this repository, please cite it as below. This is a fork of the
+  OpenHW Group's CORE-V CVA6 carrying the FaMAF CVA6 Project's additions. The
+  upstream core and its paper are cited under references.
+title: "FaMAF CVA6 Project: a CVA6 fork calibrated against gem5's MinorCPU"
+abstract: >-
+  A frozen fork of the OpenHW Group CORE-V CVA6, used as the real-hardware side
+  of a study of how closely a gem5 MinorCPU configuration can be made to match a
+  real RISC-V core. It adds the matched gem5 configurations and the gem5 patch
+  they depend on, the calibration benchmark set and its sweep harness, the
+  Verilator and gem5 run drivers, and the Docker images that run both sides.
+type: software
 authors:
-- family-names: "Zaruba"
-  given-names: "Florian"
-  orcid: "https://orcid.org/0000-0002-8194-6521"
-- family-names: "Benini"
-  given-names: "Luca"
-  orcid: "https://orcid.org/0000-0001-8068-3806"
-title: "The Cost of Application-Class Processing: Energy and Performance Analysis of a Linux-Ready 1.7-GHz 64-Bit RISC-V Core in 22-nm FDSOI Technology"
-version: 2.0.4
-doi: 10.1109/TVLSI.2019.2926114
-date-released: 2019-07-26
-url: "https://github.com/openhwgroup/cva6"
+  - family-names: "Nieto"
+    given-names: "Manuel"
+    affiliation: "FaMAF, Universidad Nacional de Córdoba"
+    orcid: "https://orcid.org/0009-0007-3893-5628"
+license: Apache-2.0
+license-url: "https://github.com/FaMAF-CVA6-Project/CVA6/blob/master/LICENSE.FaMAF"
+repository-code: "https://github.com/FaMAF-CVA6-Project/CVA6"
+url: "https://github.com/FaMAF-CVA6-Project/CVA6"
+keywords:
+  - RISC-V
+  - CVA6
+  - gem5
+  - MinorCPU
+  - computer architecture
+  - microarchitecture
+  - simulator calibration
+references:
+  - type: software
+    title: "CORE-V CVA6"
+    abstract: >-
+      The upstream core this repository forks. Everything under core/,
+      corev_apu/, common/, vendor/ and verif/ is upstream's work unless a file
+      says otherwise.
+    version: "5.3.0"
+    repository-code: "https://github.com/openhwgroup/cva6"
+    url: "https://github.com/openhwgroup/cva6"
+    authors:
+      - name: "OpenHW Group"
+  - type: article
+    title: >-
+      The Cost of Application-Class Processing: Energy and Performance Analysis
+      of a Linux-Ready 1.7-GHz 64-Bit RISC-V Core in 22-nm FDSOI Technology
+    doi: 10.1109/TVLSI.2019.2926114
+    year: 2019
+    journal: "IEEE Transactions on Very Large Scale Integration (VLSI) Systems"
+    authors:
+      - family-names: "Zaruba"
+        given-names: "Florian"
+        orcid: "https://orcid.org/0000-0002-8194-6521"
+      - family-names: "Benini"
+        given-names: "Luca"
+        orcid: "https://orcid.org/0000-0001-8068-3806"
