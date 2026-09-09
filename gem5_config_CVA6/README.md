@@ -17,36 +17,9 @@ The gem5 MinorCPU configuration matched to CVA6, and the patch it depends on.
 
 `DEFAULT_ALL_TESTS` in the sweep names **sixteen** programs, and every entry whose workload is `all` runs all sixteen. Fourteen of them are the comparison suite: `atomic_fence`, `basic_test`, `branch_full_test`, `btb_pressure`, `daxpy`, `daxpy_unrolling_4`, `fetch2_probe`, `fp_addmul`, `fp_divsqrt`, `full_test`, `icache_pressure`, `int_div`, `matmul_small` and `store_fwd`.
 
-The other two, `fp_divsqrt_probe` and `fp_divsqrt_probe2`, are **not** suite members and are left out of every figure below. They are diagnostic programs written to measure one limitation rather than to be matched: each drives the FP divider with operands chosen so the hardware's short path fires and the model's general law does not, which is what turns that divergence into a number instead of a suspicion.
+The other two, `fp_divsqrt_probe` and `fp_divsqrt_probe2`, are **not** suite members and are left out of the comparison. They are diagnostic programs written to measure one limitation rather than to be matched: each drives the FP divider with operands chosen so the hardware's short path fires and the model's general law does not, which is what turns that divergence into a number instead of a suspicion.
 
 They all live in [gem5/benchmarks/](gem5/benchmarks/) and [CVA6/benchmarks/](CVA6/benchmarks/).
-
-## Results
-
-> **TO DO** The figures below were measured with `l1icaches.mshrs = 2`.
-
-gem5 NET against CVA6 NET, both harnesses removing their own marker instructions, from the production configuration on the verified patch. Eleven of the fourteen rows sit inside 2 percent.
-
-| Benchmark | gem5 | CVA6 | Error |
-| --- | --- | --- | --- |
-| `basic_test` | 14,378 | 12,557 | +14.50% |
-| `fp_addmul` | 87,541 | 87,262 | +0.32% |
-| `store_fwd` | 1,604 | 1,602 | +0.12% |
-| `fp_divsqrt` | 2,834 | 2,828 | +0.21% |
-| `int_div` | 11,343 | 11,558 | -1.86% |
-| `btb_pressure` | 21,557 | 21,945 | -1.77% |
-| `atomic_fence` | 34,792 | 35,838 | -2.92% |
-| `fetch2_probe` | 45,052 | 44,970 | +0.18% |
-| `daxpy_unrolling_4` | 71,741 | 70,844 | +1.27% |
-| `daxpy` | 87,113 | 86,566 | +0.63% |
-| `icache_pressure` | 363,619 | 358,907 | +1.31% |
-| `matmul_small` | 454,723 | 445,958 | +1.97% |
-| `full_test` | 523,208 | 525,326 | -0.40% |
-| `branch_full_test` | 545,999 | 542,216 | +0.70% |
-
-Mean absolute error 2.01 percent, and 1.05 excluding the one footnoted row, `basic_test`, whose owners are named and priced in the limitations below. Mispredict counts sit within tens of the hardware on every row, `icache_pressure` at 4,104 against 4,113, and the demand miss counts match to a handful everywhere except `daxpy`'s documented 6,595 against 6,147.
-
-The stock configuration on an unpatched gem5 reads 14.02 percent on the same pairs. That figure is itself lower than the 21.4 the calibration started from, because three of this work's findings, the fetch cadence, the divider turnaround and the second instruction MSHR, are stock parameters and improve the unpatched baseline too. The distance from 14.02 to 2.01 is the transcribed mechanisms: the fence flush walk alone is `atomic_fence` at -94 percent without it, and `fetch2_probe` reads +27.9 against +0.18.
 
 ## The matched configuration
 
@@ -62,6 +35,8 @@ python3 run_gem5.py gem5_config_CVA6_Patch.py <test>   # patched gem5
 ```
 
 In the patched version every transcribed mechanism is on by default and each has a `--no-` switch that turns it off, so it doubles as its own ablation harness. `--no-patch` is all of them at once, which reproduces the stock MinorCPU behaviour the calibration started from. It turns the mechanisms off, not the geometry: the fetch queues stay at 3 where the stock configuration uses 2. The stock configuration takes no switches, since it carries none of these mechanisms.
+
+**The two arms differ by geometry as well as by mechanism, and the comparison should say so.** `fetch1FetchLimit` and `fetch2InputBufferSize` are both 2 in `gem5_config_CVA6.py` and both 3 in `gem5_config_CVA6_Patch.py`, while the TEST grid states its deltas against a baseline of `fetch1FetchLimit 2` (rows 2, 3, 75, 76). The 3/3 value is defensible on RTL grounds, since the I-cache holds three lines in flight with a three-deep Fetch2 buffer, but it means the patched and unpatched figures are not separated by the mechanisms alone. It is not a small effect, and on this suite it is not a second-order one either.
 
 | Switch | Turns off |
 | --- | --- |
@@ -275,11 +250,15 @@ Since every added parameter defaults off, the patched binary running `gem5_confi
 | `victim_readout_stall` | Cache | `False` | Charges the dirty-victim data-array readout, `blkSize / 8` cycles |
 | `victim_readout_store_extra` | Cache | `0` | Extra readout-window cycles when a store triggered the eviction |
 | `victim_readout_first_load_extra` | Cache | `0` | Extra readout-window cycles when a lone load triggered the eviction |
-| `refill_window_blocks` | Cache | `False` | Blocks the CPU side for `blkSize / 8` cycles while a refill writes the data array |
+| `refill_window_blocks` | Cache | `False` | Blocks the CPU side for `blkSize / 8` cycles while a refill writes the data array. **Not enabled in either production configuration**: it is set only in `gem5_config_CVA6_Patch_testing.py`, where four entries use it, and `window_accept_and_charge` carries the delivered form of the same cost |
 | `window_accept_and_charge` | Cache | `False` | The accept-and-charge form of both windows: the port never blocks, a request inside a window takes the overlap as latency, the miss that opens a readout window takes it on its own fill |
 | `victim_readable_until_fill` | Cache | `False` | Keeps the victim answering hits until its refill lands |
 | `fill_delay` | Cache | `0` | Extra cycles from response arrival to fill, without touching shared memory latency |
 | `fence_flushes_dcache` | Cache | `False` | A fence writes back every dirty line and holds the cache 2 cycles per line |
+| `fetch1WaitsForIcache` | MinorCPU | `False` | Fetch1 holds a line at the ready line instead of paying a refusal and a retry, since `cva6_icache.sv` asserts `dreq_o.ready` only in IDLE and READ |
+| `fetch1KillsOnRedirect` | MinorCPU | `False` | Every in-flight line frees its fetch slot at the redirect, the frontend side of `kill_s1` and `kill_s2` |
+| `fill_ready_at_fill` | Cache | `False` | A block is readable at the fill instant, since the icache writes the line in the fill-ack cycle, so the bus terms are not charged twice |
+| `reopen_at_ready` | Cache | `False` | Defers the full-MSHR retry until that block is readable |
 
 ### New SimObjects
 
@@ -352,16 +331,18 @@ The three count disjoint cycles, so summing them is right whichever form is conf
 
 ## Known limitations
 
-Six divergences remain, each with a named mechanism and priced where a fix exists and was declined.
+Six divergences remain, each with a named mechanism.
+
+> **The prices below are not current.** Each was measured against the results table that used to head this file, which the shipped configuration does not reproduce, so every figure quoted as an error against the hardware has been removed from this section and the remaining cycle counts need re-reading. They return with the table.
 
 **The FP divider's short path.** The hardware divides and takes square roots of small-mantissa operands in 10 cycles where full-mantissa operands take 15 and 22, the general law the model carries. The trigger is the mantissa length of both divide operands and of the radicand for the root, and a seven-bit radicand still runs short, by 5 and 4. Two probes measured it across fifteen chain blocks, and it is absent from `control_mvp.sv` and `preprocess_mvp.sv` at cvfpu revision 272e6e5, the one the hardware runs, so it is not transcribed.
 
-**The fetch-cadence residue, a priced queue depth.** `basic_test`'s uncompressed sections recovered about 38 of the 49 cycles per pass the cadence fix predicted. The remaining 11 are a second beat: the fetch round trip is 3 cycles, and with `fetch1FetchLimit` and `fetch2InputBufferSize` both at 2 the requests go out two lines every three cycles. Depth 3 was tested and declined on the stack of the day: `basic_test` recovered 835 cycles while `btb_pressure` paid 3,505 and the run-ahead gauge moved 4,100 fetches past the hardware. The structural I-side reopened it, since holding at the ready line and killing on a redirect both bound the run-ahead that reading paid for, and the adopted depth is now 3. `TEST 86` and `TEST 91` separate the depth from the mechanisms, and this residue needs re-reading against them.
+**The fetch-cadence residue, a priced queue depth.** `basic_test`'s uncompressed sections recovered about 38 of the 49 cycles per pass the cadence fix predicted. The remaining 11 are a second beat: the fetch round trip is 3 cycles, and with `fetch1FetchLimit` and `fetch2InputBufferSize` both at 2 the requests go out two lines every three cycles. Depth 3 was tested and declined on the stack of the day, `basic_test` recovering cycles while `btb_pressure` paid more and the run-ahead gauge moved past the hardware. The structural I-side reopened it, since holding at the ready line and killing on a redirect both bound the run-ahead that reading paid for, and the adopted depth is now 3. `TEST 86` and `TEST 91` separate the depth from the mechanisms, and this residue needs re-reading against them.
 
 **daxpy's miss count under the fill split.** With the readout window charging the trigger's own fill instead of a flat delay on every fill, the relative phase of the three streams inside a set changes and the transcribed random policy names a different way on its third visit to each set: 6,595 misses against the hardware's 6,147, worth 379 cycles because Minor's single outstanding miss overlaps most of each with the FP chain. The tier probe shows the same tiers firing at the same rates, so the difference is the LFSR phase.
 
-**Miss-level parallelism at one.** Minor serialises demand misses where the HPDcache overlaps a second. Its visible cost on this suite is gone with the fill split, `fetch2_probe` at +0.19, but the structure stands and the port model's calibration absorbs it.
+**Miss-level parallelism at one.** Minor serialises demand misses where the HPDcache overlaps a second. Its visible cost on this suite is gone with the fill split, but the structure stands and the port model's calibration absorbs it.
 
-**Instruction-side pair timing under two MSHRs.** Isolated queued miss pairs land about two cycles faster than the hardware, the second fill arriving at the port's occupancy behind the first rather than CVA6's full five-cycle re-present, which is why `int_div` reads -1.86 and `btb_pressure` -1.77. Chains match and pairs undershoot. The residue is the port model's occupancy against the icache's re-present interval, documented rather than tuned.
+**Instruction-side pair timing under two MSHRs.** Isolated queued miss pairs land about two cycles faster than the hardware, the second fill arriving at the port's occupancy behind the first rather than CVA6's full five-cycle re-present. Chains match and pairs undershoot. This entry is written for the two-MSHR stack and the shipped configuration runs at one, so it needs re-reading against the structural I-side as well as against the new table. The residue is the port model's occupancy against the icache's re-present interval, documented rather than tuned.
 
 **Instruction-side access counts.** CVA6's PMU counts every fetch it presents, including the wrong-path lines its deeper run-ahead issues and kills, which gem5 never issues. The cadence fix widens that gap slightly, since faster instruction flow resolves branches sooner and fetches fewer wrong-path lines. I-miss counts match on every row. I-access counts are a behavioural difference, reported rather than compared.
