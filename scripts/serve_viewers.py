@@ -5,9 +5,13 @@ A container has no browser and no display. Serving the page and publishing the
 port puts it in the host's browser while the trace and the JSON stay inside.
 Serving also unblocks fetch, which the sample button and a JSON URL need.
 
-    python3 serve_viewers.py                 # port 8000, this folder down
-    python3 serve_viewers.py --port 9000
-    python3 serve_viewers.py --root viewers
+    python3 scripts/serve_viewers.py          # port 8000, repository root
+    python3 scripts/serve_viewers.py --port 9000
+    python3 scripts/serve_viewers.py --root viewers
+
+Inside a container it sits at the root instead, so it is `python3
+serve_viewers.py` there. Either way the folder served is worked out from where
+a viewer page actually is, and --root overrides it.
 
 Start the container with the port published, or nothing outside it can connect:
 
@@ -47,20 +51,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+def default_root():
+    """The folder to serve when --root is not given.
+
+    This script lives in scripts/ in the repository and at the root of each
+    container image, so neither the working directory nor the script's own
+    folder is right in both places."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for candidate in (os.getcwd(), here, os.path.dirname(here)):
+        if any(os.path.isfile(os.path.join(candidate, page))
+               for page in VIEWER_PAGES):
+            return candidate
+    return os.getcwd()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Serve the viewer pages and their JSONs over HTTP.")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT,
                         help=f"Port to listen on. Defaults to {DEFAULT_PORT}")
-    parser.add_argument("--root", default=".",
-                        help="Folder to serve. Defaults to the working "
-                             "directory")
+    parser.add_argument("--root", default=None,
+                        help="Folder to serve. Defaults to the first of the "
+                             "working directory, this script's folder and the "
+                             "folder above it that holds a viewer page")
     parser.add_argument("--bind", default="0.0.0.0",
                         help="Address to bind. Defaults to 0.0.0.0, which is "
                              "what a published container port needs")
     args = parser.parse_args()
 
-    root = os.path.abspath(args.root)
+    root = os.path.abspath(args.root if args.root else default_root())
     if not os.path.isdir(root):
         print(f"[ERROR] {root} is not a folder")
         return 2
