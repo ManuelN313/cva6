@@ -1,6 +1,28 @@
 # Author: Florian Zaruba, ETH Zurich
 # Date: 03/19/2017
 # Description: Makefile for linting and testing Ariane.
+#
+# ---------------------------------------------------------------------------
+# NOTICE OF MODIFICATION
+#
+# This file has been modified by the FaMAF CVA6 Project, Universidad Nacional
+# de Cordoba, and is NOT the upstream file. The unmodified original is the
+# Makefile at the root of this repository.
+#
+# What changed: two variables, trace_start and trace_end, are added and passed
+# to the Verilator build as -DSTART_TRACE_CYCLE and -DEND_TRACE_CYCLE, which
+# the modified ariane_tb.cpp beside this file uses to window the waveform dump.
+#
+# Known difference to reconcile: this copy sets XILINX_BOARD to
+# xilinx.com:vc707:part0:1.3 where the current root Makefile sets 1.4. That is
+# a consequence of this copy having been taken from an earlier upstream
+# revision, not a deliberate change, and it matters only to the FPGA flow,
+# which this project does not run.
+#
+# This notice is required by Apache License 2.0 section 4(b), which governs the
+# original file and requires modified files to carry prominent notices stating
+# that they were changed.
+# ---------------------------------------------------------------------------
 
 # questa library
 library ?= work
