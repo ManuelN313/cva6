@@ -85,7 +85,7 @@ RUN cp /cva6/viewers/CVA6Flow/scripts/run_CVA6.py \
                 /cva6/viewers/CVA6Flow/*.py \
                 /cva6/viewers/CVA6Flow/scripts/*.py
 
-COPY dockerfiles/serve_viewers.py /cva6/serve_viewers.py
+COPY scripts/serve_viewers.py /cva6/serve_viewers.py
 
 ENV DV_SIMULATORS=veri-testharness
 

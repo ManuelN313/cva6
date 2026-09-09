@@ -63,7 +63,7 @@ COPY viewers/MinorFlow/scripts/run_all_gem5_benchmarks.py /gem5/
 COPY viewers/MinorFlow/scripts/clean_gem5_runs.py         /gem5/
 COPY gem5_config_CVA6/gem5/configs/*.py                   /gem5/
 COPY viewers/MinorFlow/                                   /gem5/viewers/MinorFlow/
-COPY dockerfiles/serve_viewers.py                         /gem5/serve_viewers.py
+COPY scripts/serve_viewers.py                             /gem5/serve_viewers.py
 
 # The tests themselves, in the folder run_all_gem5_benchmarks.py looks in by
 # default. Only the programs: the drivers above are the ones that run them.
