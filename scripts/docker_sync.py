@@ -77,7 +77,7 @@ CONTAINERS = {
             ("viewers/MinorFlow/index.html", "/gem5/viewers/MinorFlow/"),
             ("viewers/MinorFlow/scripts/create_all_MinorFlow_jsons.py",
              "/gem5/viewers/MinorFlow/scripts/"),
-            ("dockerfiles/serve_viewers.py", "/gem5/"),
+            ("scripts/serve_viewers.py", "/gem5/"),
         ],
         # Folders copied whole, source -> destination.
         "push_dirs": [
@@ -106,7 +106,7 @@ CONTAINERS = {
             ("viewers/CVA6Flow/index.html", "/cva6/viewers/CVA6Flow/"),
             ("viewers/CVA6Flow/scripts/create_all_CVA6Flow_jsons.py",
              "/cva6/viewers/CVA6Flow/scripts/"),
-            ("dockerfiles/serve_viewers.py", "/cva6/"),
+            ("scripts/serve_viewers.py", "/cva6/"),
         ],
         "push_dirs": [
             ("gem5_config_CVA6/CVA6/benchmarks", "/cva6/benchmarks"),
