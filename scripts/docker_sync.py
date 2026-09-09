@@ -379,7 +379,7 @@ def main():
                         help=f"where pulled folders land. Defaults to "
                              f"{DEFAULT_OUT_DIR}/<container>/")
     args = parser.parse_args()
-    
+
     sys.stdout.reconfigure(line_buffering=True)
 
     if subprocess.run(["which", "docker"],
