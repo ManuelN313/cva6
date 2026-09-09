@@ -79,6 +79,8 @@ RUN cp /cva6/viewers/CVA6Flow/scripts/run_CVA6.py \
     && mkdir -p /cva6/benchmarks \
     && cp /cva6/gem5_config_CVA6/CVA6/benchmarks/*.c \
           /cva6/gem5_config_CVA6/CVA6/benchmarks/*.S /cva6/benchmarks/ \
+    && cp /cva6/gem5_config_CVA6/CVA6/benchmarks/.overhead_suite \
+          /cva6/benchmarks/ \
     && chmod +x /cva6/*.py /cva6/scripts/*.py \
                 /cva6/viewers/CVA6Flow/*.py \
                 /cva6/viewers/CVA6Flow/scripts/*.py

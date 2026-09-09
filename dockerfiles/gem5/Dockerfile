@@ -69,6 +69,7 @@ COPY dockerfiles/serve_viewers.py                         /gem5/serve_viewers.py
 # default. Only the programs: the drivers above are the ones that run them.
 COPY gem5_config_CVA6/gem5/benchmarks/*.c \
      gem5_config_CVA6/gem5/benchmarks/*.S /gem5/benchmarks/
+COPY gem5_config_CVA6/gem5/benchmarks/.overhead_suite /gem5/benchmarks/
 
 RUN chmod +x /gem5/*.py /gem5/viewers/MinorFlow/*.py \
              /gem5/viewers/MinorFlow/scripts/*.py
