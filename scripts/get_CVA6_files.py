@@ -142,13 +142,36 @@ def main():
             planned.extend(found)
 
     # The destination is flat, so two sources sharing a basename would leave
-    # only the last one. The manifests are the authority on which file wins,
-    # so report the clash rather than choosing.
+    # only the last one. We rename clashing files to keep every copy, using the parent
+    # directory name as a prefix. If that still clashes, we walk up the tree until
+    # the names are distinct. The depth is limited to avoid a runaway in case of
+    # a very deep tree.
     by_name = {}
     for path in planned:
         by_name.setdefault(os.path.basename(path), []).append(path)
     clashes = {name: paths for name, paths in by_name.items()
                if len(set(paths)) > 1}
+
+    # Destination name per source path. Only clashing files are renamed, so a
+    # tree with no clash is byte-for-byte what it was before.
+    dest_name = {}
+    for path in planned:
+        name = os.path.basename(path)
+        if name in clashes:
+            parent = os.path.basename(os.path.dirname(path))
+            dest_name[path] = f"{parent}__{name}" if parent else name
+        else:
+            dest_name[path] = name
+    # A prefix can itself collide, when two clashing copies share a parent
+    # directory name. Walk further up until the names are distinct.
+    for name, paths in clashes.items():
+        unique = sorted(set(paths))
+        depth = 1
+        while len({dest_name[p] for p in unique}) < len(unique) and depth < 6:
+            depth += 1
+            for path in unique:
+                parts = os.path.dirname(path).split(os.sep)[-depth:]
+                dest_name[path] = "__".join(parts + [name])
 
     print(f"[INFO] {len(planned)} source(s) named, {len(by_name)} distinct "
           f"filename(s)")
@@ -156,9 +179,11 @@ def main():
     for problem in warnings:
         print(f"[WARN] {problem}")
     for name, paths in sorted(clashes.items()):
-        print(f"[WARN] name clash on {name}, only the last copy survives:")
+        print(f"[WARN] name clash on {name}, every copy kept under a "
+              f"directory-prefixed name:")
         for path in sorted(set(paths)):
-            print(f"           {os.path.relpath(path, repo_root)}")
+            print(f"           {os.path.relpath(path, repo_root)}"
+                  f"  ->  {dest_name[path]}")
 
     if args.dry_run:
         if args.verbose:
@@ -170,14 +195,16 @@ def main():
     os.makedirs(dest, exist_ok=True)
     copied = 0
     for path in planned:
-        shutil.copy2(path, os.path.join(dest, os.path.basename(path)))
+        shutil.copy2(path, os.path.join(dest, dest_name[path]))
         copied += 1
         if args.verbose:
-            print(f"       {os.path.relpath(path, repo_root)}")
+            print(f"       {os.path.relpath(path, repo_root)}"
+                  f"  ->  {dest_name[path]}")
 
     print(f"[INFO] Copied {copied} file(s) into {dest}")
     if warnings or clashes:
-        print(f"[INFO] {len(warnings)} missing, {len(clashes)} name clash(es)")
+        print(f"[INFO] {len(warnings)} missing, {len(clashes)} clash(es), "
+              f"every clashing copy kept under a prefixed name")
     return 0
 
 
