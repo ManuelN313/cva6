@@ -63,7 +63,7 @@ CONTAINERS = {
             ("viewers/MinorFlow/scripts/run_all_gem5_benchmarks.py", "/gem5/"),
             ("viewers/MinorFlow/scripts/clean_gem5_runs.py", "/gem5/"),
             ("viewers/MinorFlow/scripts/run_MinorFlow_sweep.py", "/gem5/"),
-            ("scripts/run_CVA6_testing_sweep.py", "/gem5/"),
+            ("scripts/run_config_search_sweep.py", "/gem5/"),
             # Configurations, the fork's and the viewer's, plus the patch.
             ("gem5_config_CVA6/gem5/configs/.", "/gem5/"),
             ("viewers/MinorFlow/configs/gem5_config_MinorFlow.py", "/gem5/"),

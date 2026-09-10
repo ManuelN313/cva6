@@ -3,11 +3,11 @@
 warns above 50 MiB and refuses above 100 MiB, and git has no size test, so the
 measuring happens here. A tracked file is reported rather than ignored.
 
-  python3 ignore_big_repo_jsons.py             # list, then ask
-  python3 ignore_big_repo_jsons.py -y          # write without asking
-  python3 ignore_big_repo_jsons.py --dry-run   # list only
-  python3 ignore_big_repo_jsons.py -l 20       # a different threshold, in MiB
-  python3 ignore_big_repo_jsons.py --prune     # also drop entries no longer oversized
+  python3 ignore_big_CVA6_repo_jsons.py             # list, then ask
+  python3 ignore_big_CVA6_repo_jsons.py -y          # write without asking
+  python3 ignore_big_CVA6_repo_jsons.py --dry-run   # list only
+  python3 ignore_big_CVA6_repo_jsons.py -l 20       # a different threshold, in MiB
+  python3 ignore_big_CVA6_repo_jsons.py --prune     # also drop entries no longer oversized
 """
 import os
 import re

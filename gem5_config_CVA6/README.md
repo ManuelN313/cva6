@@ -10,7 +10,7 @@ The gem5 MinorCPU configuration matched to CVA6, and the patch it depends on.
 | `gem5/configs/gem5_config_CVA6_Patch.py`         | The matched configuration, for a **patched** gem5                                                                                                         |
 | `gem5/configs/gem5_config_CVA6_testing.py`       | The calibration harness: the stock core as a table of single-knob perturbations, `TEST 1` to `TEST 39`                                                    |
 | `gem5/configs/gem5_config_CVA6_Patch_testing.py` | The same 39 entries under the same numbers, then the ones that need the patch, `TEST 40` to `TEST 95` and `TEST 99`. This is the sweep's `DEFAULT_CONFIG` |
-| `../scripts/run_CVA6_testing_sweep.py`           | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep)                                              |
+| `../scripts/run_config_search_sweep.py`          | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep)                                              |
 | `gem5/configs/MinorCPU_CVA6.patch`               | Every gem5 change the patched configuration depends on, CPU, front end and caches, in one verified file                                                   |
 | `gem5/tests/`                                    | The gem5 tests side                                                                                                                                       |
 | `CVA6/tests/`                                    | The CVA6 tests side                                                                                                                                       |

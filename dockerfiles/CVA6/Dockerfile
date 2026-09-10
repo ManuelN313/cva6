@@ -69,7 +69,7 @@ RUN rm -rf /cva6/gem5_config_CVA6/gem5 \
     /cva6/dockerfiles \
     && rm -f /cva6/scripts/get_CVA6_files.py \
     /cva6/scripts/docker_sync.py \
-    /cva6/scripts/run_CVA6_testing_sweep.py
+    /cva6/scripts/run_config_search_sweep.py
 
 # The drivers run from /cva6, which is what the README documents and what the
 # hardcoded root expects, so they sit there rather than two folders down.

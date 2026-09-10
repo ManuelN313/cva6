@@ -24,7 +24,7 @@ DEFAULT_CONFIG = "gem5_config_CVA6_Patch_testing.py"
 # patched build is the one that can run it.
 DEFAULT_VARIANT = "patch"
 DEFAULT_TESTS_DIR = "benchmarks"
-DEFAULT_OUT_DIR = "CVA6_testing_sweep_results"
+DEFAULT_OUT_DIR = "config_testing_sweep_results"
 
 RUNNER_NAME = "run_gem5.py"
 
