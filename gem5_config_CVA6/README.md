@@ -4,16 +4,16 @@ The gem5 MinorCPU configuration matched to CVA6, and the patch it depends on.
 
 ## Layout
 
-| Path | What it is |
-| --- | --- |
-| `gem5/configs/gem5_config_CVA6.py` | The matched configuration, for a **stock** gem5 |
-| `gem5/configs/gem5_config_CVA6_Patch.py` | The matched configuration, for a **patched** gem5 |
-| `gem5/configs/gem5_config_CVA6_testing.py` | The calibration harness: the stock core as a table of single-knob perturbations, `TEST 1` to `TEST 39` |
+| Path                                             | What it is                                                                                                                                                |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gem5/configs/gem5_config_CVA6.py`               | The matched configuration, for a **stock** gem5                                                                                                           |
+| `gem5/configs/gem5_config_CVA6_Patch.py`         | The matched configuration, for a **patched** gem5                                                                                                         |
+| `gem5/configs/gem5_config_CVA6_testing.py`       | The calibration harness: the stock core as a table of single-knob perturbations, `TEST 1` to `TEST 39`                                                    |
 | `gem5/configs/gem5_config_CVA6_Patch_testing.py` | The same 39 entries under the same numbers, then the ones that need the patch, `TEST 40` to `TEST 95` and `TEST 99`. This is the sweep's `DEFAULT_CONFIG` |
-| `../scripts/run_CVA6_testing_sweep.py` | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep) |
-| `gem5/configs/MinorCPU_CVA6.patch` | Every gem5 change the patched configuration depends on, CPU, front end and caches, in one verified file |
-| `gem5/tests/` | The gem5 tests side |
-| `CVA6/tests/` | The CVA6 tests side |
+| `../scripts/run_CVA6_testing_sweep.py`           | Replays that table, sweeping its `DEFAULT_CONFIG`. See the main [README](../README.md#the-calibration-sweep)                                              |
+| `gem5/configs/MinorCPU_CVA6.patch`               | Every gem5 change the patched configuration depends on, CPU, front end and caches, in one verified file                                                   |
+| `gem5/tests/`                                    | The gem5 tests side                                                                                                                                       |
+| `CVA6/tests/`                                    | The CVA6 tests side                                                                                                                                       |
 
 `DEFAULT_ALL_TESTS` in the sweep names **sixteen** programs, and every entry whose workload is `all` runs all sixteen. Fourteen of them are the comparison suite: `atomic_fence`, `basic_test`, `branch_full_test`, `btb_pressure`, `daxpy`, `daxpy_unrolling_4`, `fetch2_probe`, `fp_addmul`, `fp_divsqrt`, `full_test`, `icache_pressure`, `int_div`, `matmul_small` and `store_fwd`.
 
@@ -38,25 +38,25 @@ In the patched version every transcribed mechanism is on by default and each has
 
 **The two arms differ by geometry as well as by mechanism, and the comparison should say so.** `fetch1FetchLimit` and `fetch2InputBufferSize` are both 2 in `gem5_config_CVA6.py` and both 3 in `gem5_config_CVA6_Patch.py`, while the TEST grid states its deltas against a baseline of `fetch1FetchLimit 2` (rows 2, 3, 75, 76). The 3/3 value is defensible on RTL grounds, since the I-cache holds three lines in flight with a three-deep Fetch2 buffer, but it means the patched and unpatched figures are not separated by the mechanisms alone. It is not a small effect, and on this suite it is not a second-order one either.
 
-| Switch | Turns off |
-| --- | --- |
-| `--no-patch` | Every mechanism below, at once |
-| `--no-port-model` | The single-ported memory adapter |
-| `--no-evict-on-allocate` | Victim selection and writeback at MSHR allocation |
-| `--no-victim-readout-stall` | The dirty-victim data-array occupancy |
-| `--no-cva6-victim-policy` | The transcribed L1D victim policy, back to gem5 TreePLRU |
-| `--no-victim-readable-until-fill` | The victim staying readable until its refill |
-| `--no-fill-phase` | The L1D fill-instant correction |
-| `--no-fence-flush` | A fence flushing the L1D, both the core's signal and the cache acting on it |
-| `--no-fence-squash` | The rule F5 pipeline squash on a committed full fence |
-| `--no-icache-hold` | Fetch1 holding a line at the ready line, back to a refusal and a retry |
-| `--no-kill-on-redirect` | Killed lines freeing their fetch slots at the redirect, back to holding them until their responses return |
-| `--no-icache-structure` | The L1I fill being readable at the fill instant and the full-MSHR retry waiting for it |
-| `--no-window-charge` | The accept-and-charge form of the readout window and its class extras, back to the flat fill split |
-| `--no-cva6-icache-policy` | The transcribed L1I policy, back to gem5 RandomRP |
-| `--no-cva6-direct-targets` | Decode-computed direct targets, and with them the JALR-only tagless BTB |
-| `--no-ras-decay` | The unrecovered speculative RAS, back to gem5's repair on squash. Independent of the switches above |
-| `--no-store-forwarding-model` | CVA6 having no store-to-load forwarding, and the replay delay with it |
+| Switch                            | Turns off                                                                                                 |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `--no-patch`                      | Every mechanism below, at once                                                                            |
+| `--no-port-model`                 | The single-ported memory adapter                                                                          |
+| `--no-evict-on-allocate`          | Victim selection and writeback at MSHR allocation                                                         |
+| `--no-victim-readout-stall`       | The dirty-victim data-array occupancy                                                                     |
+| `--no-cva6-victim-policy`         | The transcribed L1D victim policy, back to gem5 TreePLRU                                                  |
+| `--no-victim-readable-until-fill` | The victim staying readable until its refill                                                              |
+| `--no-fill-phase`                 | The L1D fill-instant correction                                                                           |
+| `--no-fence-flush`                | A fence flushing the L1D, both the core's signal and the cache acting on it                               |
+| `--no-fence-squash`               | The rule F5 pipeline squash on a committed full fence                                                     |
+| `--no-icache-hold`                | Fetch1 holding a line at the ready line, back to a refusal and a retry                                    |
+| `--no-kill-on-redirect`           | Killed lines freeing their fetch slots at the redirect, back to holding them until their responses return |
+| `--no-icache-structure`           | The L1I fill being readable at the fill instant and the full-MSHR retry waiting for it                    |
+| `--no-window-charge`              | The accept-and-charge form of the readout window and its class extras, back to the flat fill split        |
+| `--no-cva6-icache-policy`         | The transcribed L1I policy, back to gem5 RandomRP                                                         |
+| `--no-cva6-direct-targets`        | Decode-computed direct targets, and with them the JALR-only tagless BTB                                   |
+| `--no-ras-decay`                  | The unrecovered speculative RAS, back to gem5's repair on squash. Independent of the switches above       |
+| `--no-store-forwarding-model`     | CVA6 having no store-to-load forwarding, and the replay delay with it                                     |
 
 ### The calibration table
 
@@ -66,132 +66,132 @@ The table is ordered by what an entry needs to run, then by the part of the mach
 
 **TESTS 1 to 39 run on a stock gem5.**
 
-| # | What it changes | Workload |
-| --- | --- | --- |
-| 1 | adopted baseline | all |
-| | **fetch geometry** | |
-| 2 | fetch1FetchLimit 2 -> 1 | matmul_small |
-| 3 | fetch1FetchLimit 2 -> 3 | matmul_small |
-| 4 | fetch 8B/8B, fetch2 buffer 8 | all |
-| 5 | fetch2InputBufferSize 2 -> 4 | fetch2_probe |
-| | **instruction cache** | |
-| 6 | L1I random -> LRU | full_test |
-| 7 | L1I response_latency 0 -> 1 | daxpy |
-| 8 | L1I response_latency 0 -> 2 | daxpy |
-| 9 | L1I 4KiB | daxpy |
-| | **decode buffer** | |
-| 10 | decodeInputBufferSize 1 -> 4 | daxpy, full_test |
-| 11 | decodeInputBufferSize 1 -> 8 | daxpy, full_test |
-| | **branch prediction** | |
-| 12 | Morillas 2025 predictor sizing | branch_full_test, btb_pressure, full_test |
-| 13 | BTB 32 -> 512 | branch_full_test, btb_pressure, full_test |
-| 14 | BTB 32 -> 4096 | branch_full_test, btb_pressure, full_test |
-| | **LSQ queue geometry** | |
-| 15 | requests queue 2 -> 4 | store_fwd |
-| 16 | requests queue 2 -> 8 | store_fwd |
-| 17 | store buffer 4 -> 8 | store_fwd |
-| 18 | requests 8, store buffer 8 | store_fwd |
-| | **functional units** | |
-| 19 | int_mul opLat 2 -> 1 | daxpy, full_test |
-| 20 | fp_divsqrt legacy | fp_divsqrt |
-| 21 | serdiv base 1 -> 0 | int_div |
-| 22 | fp_addmul without the double mask | fp_addmul |
-| 23 | FP mem classes back on vec_mem_fast | daxpy |
-| 24 | atomic occupancy entries removed | atomic_fence |
-| | **data cache** | |
-| 25 | L1D PLRU -> true LRU | full_test |
-| 26 | response_latency 4 -> 5 | daxpy |
-| 27 | response_latency 4 -> 6 | daxpy |
-| 28 | response_latency 4 -> 3 | daxpy |
-| 29 | L1D 16KiB | daxpy |
-| 30 | L1D 64KiB | daxpy |
-| 31 | L1D assoc 8 -> 2 | daxpy |
-| 32 | L1D mshrs 8 -> 1 | daxpy |
-| 33 | L1D write_buffers 8 -> 2 | daxpy |
-| 34 | L1D hit lat +1 | daxpy |
-| | **memory system** | |
-| 35 | membus width 8 -> 16 | daxpy |
-| 36 | membus width 8 -> 4 | daxpy |
-| 37 | memory bandwidth 12.8GiB/s -> 0.4GiB/s | daxpy |
-| 38 | mem latency 0 -> 60ns | daxpy |
-| | **core-wide** | |
-| 39 | threadPolicy -> RoundRobin | daxpy |
+| #   | What it changes                        | Workload                                  |
+| --- | -------------------------------------- | ----------------------------------------- |
+| 1   | adopted baseline                       | all                                       |
+|     | **fetch geometry**                     |                                           |
+| 2   | fetch1FetchLimit 2 -> 1                | matmul_small                              |
+| 3   | fetch1FetchLimit 2 -> 3                | matmul_small                              |
+| 4   | fetch 8B/8B, fetch2 buffer 8           | all                                       |
+| 5   | fetch2InputBufferSize 2 -> 4           | fetch2_probe                              |
+|     | **instruction cache**                  |                                           |
+| 6   | L1I random -> LRU                      | full_test                                 |
+| 7   | L1I response_latency 0 -> 1            | daxpy                                     |
+| 8   | L1I response_latency 0 -> 2            | daxpy                                     |
+| 9   | L1I 4KiB                               | daxpy                                     |
+|     | **decode buffer**                      |                                           |
+| 10  | decodeInputBufferSize 1 -> 4           | daxpy, full_test                          |
+| 11  | decodeInputBufferSize 1 -> 8           | daxpy, full_test                          |
+|     | **branch prediction**                  |                                           |
+| 12  | Morillas 2025 predictor sizing         | branch_full_test, btb_pressure, full_test |
+| 13  | BTB 32 -> 512                          | branch_full_test, btb_pressure, full_test |
+| 14  | BTB 32 -> 4096                         | branch_full_test, btb_pressure, full_test |
+|     | **LSQ queue geometry**                 |                                           |
+| 15  | requests queue 2 -> 4                  | store_fwd                                 |
+| 16  | requests queue 2 -> 8                  | store_fwd                                 |
+| 17  | store buffer 4 -> 8                    | store_fwd                                 |
+| 18  | requests 8, store buffer 8             | store_fwd                                 |
+|     | **functional units**                   |                                           |
+| 19  | int_mul opLat 2 -> 1                   | daxpy, full_test                          |
+| 20  | fp_divsqrt legacy                      | fp_divsqrt                                |
+| 21  | serdiv base 1 -> 0                     | int_div                                   |
+| 22  | fp_addmul without the double mask      | fp_addmul                                 |
+| 23  | FP mem classes back on vec_mem_fast    | daxpy                                     |
+| 24  | atomic occupancy entries removed       | atomic_fence                              |
+|     | **data cache**                         |                                           |
+| 25  | L1D PLRU -> true LRU                   | full_test                                 |
+| 26  | response_latency 4 -> 5                | daxpy                                     |
+| 27  | response_latency 4 -> 6                | daxpy                                     |
+| 28  | response_latency 4 -> 3                | daxpy                                     |
+| 29  | L1D 16KiB                              | daxpy                                     |
+| 30  | L1D 64KiB                              | daxpy                                     |
+| 31  | L1D assoc 8 -> 2                       | daxpy                                     |
+| 32  | L1D mshrs 8 -> 1                       | daxpy                                     |
+| 33  | L1D write_buffers 8 -> 2               | daxpy                                     |
+| 34  | L1D hit lat +1                         | daxpy                                     |
+|     | **memory system**                      |                                           |
+| 35  | membus width 8 -> 16                   | daxpy                                     |
+| 36  | membus width 8 -> 4                    | daxpy                                     |
+| 37  | memory bandwidth 12.8GiB/s -> 0.4GiB/s | daxpy                                     |
+| 38  | mem latency 0 -> 60ns                  | daxpy                                     |
+|     | **core-wide**                          |                                           |
+| 39  | threadPolicy -> RoundRobin             | daxpy                                     |
 
 **TESTS 40 to 95 and TEST 99 need the patch.**
 
-| # | What it changes | Workload |
-| --- | --- | --- |
-| | **store-to-load forwarding** | |
-| 40 | store forwarding re-enabled | store_fwd |
-| 41 | replay delay 2 -> 0 | store_fwd |
-| | **data-cache stack** | |
-| 42 | port model alone | daxpy |
-| 43 | + evict-on-allocate | daxpy |
-| 44 | + victim readout stall | daxpy |
-| 45 | + HPDcache bit-PLRU | daxpy |
-| 46 | + HPDcache random | daxpy |
-| 47 | + victim readable until fill | daxpy |
-| 48 | + fill phase, the production stack | daxpy |
-| | **production stack, ablations and geometry** | |
-| 49 | production stack, L1D 16 KiB | daxpy |
-| 50 | production stack, L1D 64 KiB | daxpy |
-| 51 | production minus the port model | daxpy |
-| 52 | production minus the readout stall | daxpy |
-| 53 | production with bit-PLRU instead | daxpy |
-| 54 | production minus the fill phase | daxpy |
-| 55 | fill delay without the random policy | daxpy |
-| | **fence and instruction-cache policy** | |
-| 56 | + fence flushes the L1D | atomic_fence |
-| 57 | + transcribed L1I policy | all |
-| | **front end, direct targets and the BTB** | |
-| 58 | production minus direct targets | btb_pressure |
-| 59 | same-cycle fetch2 redirect | all |
-| 60 | BTB as the JALR store | all |
-| 61 | tagless BTB | all |
-| | **fill timing** | |
-| 62 | dirty-only fill delay | all |
-| | **refill window** | |
-| 63 | refill window + clean fill | all |
-| 64 | refill window alone, isolation | all |
-| 65 | fence pipeline squash, rule F5 | all |
-| 66 | RAS no-recovery | all |
-| 67 | store-class readout extra, isolation | all |
-| 68 | the tier 0 plus 2 pair | all |
-| 69 | all candidates together | all |
-| 70 | pair + class x and z | all |
-| | **accept-and-charge** | |
-| 71 | accept-and-charge, dirty-only fill | all |
-| 72 | accept-and-charge with the class law | all |
-| 73 | accept-and-charge, the full pair | all |
-| 74 | accept-and-charge refill window | all |
-| | **the fetch supply beat, basic_test's owner** | |
-| 75 | fetch1FetchLimit 2 -> 4 | all |
-| 76 | fetch1FetchLimit 4, fetch2 buffer 2 -> 1 | all |
-| 77 | fetch limit 4, fetch2 buffer 2 -> 4 | all |
-| | **the per-line cadence, the beat's real owner** | |
-| 78 | fetch2CycleInput False -> True | all |
-| 79 | fetch2CycleInput True, fetch & buffer 2 | all |
-| | **the class law without the fill-0 phase artefact** | |
-| 80 | flat fill, accept-and-charge | all |
-| 81 | TEST 72 stack on the 79 frontend | all |
-| 82 | adopted stack plus the serdiv turnaround | all |
-| 83 | adopted stack plus the divsqrt format law | all |
-| 84 | adopted stack plus all | all |
-| | **the final-check probes, on the adopted stack** | |
-| 85 | L1I mshrs 2 -> 1, the I-side retry tax | all |
-| 86 | fetch limit 3, fetch2 buffer 3 | all |
-| 87 | fetch limit 4, fetch2 buffer 3 | all |
-| 88 | L1I reopen at ready | all |
-| | **the structural I-side** | |
-| 89 | mshrs 1, reopen at ready, fetch1 holds | all |
-| 90 | ablation of 89 without reopen at ready | all |
-| 91 | the 89 with fetch limit 3 and buffer 3 | all |
-| 92 | the 90 with fetch limit 3 and buffer 3 | all |
-| 93 | the 92 with the fill readable at the fill | all |
-| 94 | the 93 with kill on redirect | all |
-| 95 | the whole structural I-side, TEST 99's stack | all |
-| | **full patch baseline** | |
-| 99 | full production | all |
+| #   | What it changes                                     | Workload     |
+| --- | --------------------------------------------------- | ------------ |
+|     | **store-to-load forwarding**                        |              |
+| 40  | store forwarding re-enabled                         | store_fwd    |
+| 41  | replay delay 2 -> 0                                 | store_fwd    |
+|     | **data-cache stack**                                |              |
+| 42  | port model alone                                    | daxpy        |
+| 43  | + evict-on-allocate                                 | daxpy        |
+| 44  | + victim readout stall                              | daxpy        |
+| 45  | + HPDcache bit-PLRU                                 | daxpy        |
+| 46  | + HPDcache random                                   | daxpy        |
+| 47  | + victim readable until fill                        | daxpy        |
+| 48  | + fill phase, the production stack                  | daxpy        |
+|     | **production stack, ablations and geometry**        |              |
+| 49  | production stack, L1D 16 KiB                        | daxpy        |
+| 50  | production stack, L1D 64 KiB                        | daxpy        |
+| 51  | production minus the port model                     | daxpy        |
+| 52  | production minus the readout stall                  | daxpy        |
+| 53  | production with bit-PLRU instead                    | daxpy        |
+| 54  | production minus the fill phase                     | daxpy        |
+| 55  | fill delay without the random policy                | daxpy        |
+|     | **fence and instruction-cache policy**              |              |
+| 56  | + fence flushes the L1D                             | atomic_fence |
+| 57  | + transcribed L1I policy                            | all          |
+|     | **front end, direct targets and the BTB**           |              |
+| 58  | production minus direct targets                     | btb_pressure |
+| 59  | same-cycle fetch2 redirect                          | all          |
+| 60  | BTB as the JALR store                               | all          |
+| 61  | tagless BTB                                         | all          |
+|     | **fill timing**                                     |              |
+| 62  | dirty-only fill delay                               | all          |
+|     | **refill window**                                   |              |
+| 63  | refill window + clean fill                          | all          |
+| 64  | refill window alone, isolation                      | all          |
+| 65  | fence pipeline squash, rule F5                      | all          |
+| 66  | RAS no-recovery                                     | all          |
+| 67  | store-class readout extra, isolation                | all          |
+| 68  | the tier 0 plus 2 pair                              | all          |
+| 69  | all candidates together                             | all          |
+| 70  | pair + class x and z                                | all          |
+|     | **accept-and-charge**                               |              |
+| 71  | accept-and-charge, dirty-only fill                  | all          |
+| 72  | accept-and-charge with the class law                | all          |
+| 73  | accept-and-charge, the full pair                    | all          |
+| 74  | accept-and-charge refill window                     | all          |
+|     | **the fetch supply beat, basic_test's owner**       |              |
+| 75  | fetch1FetchLimit 2 -> 4                             | all          |
+| 76  | fetch1FetchLimit 4, fetch2 buffer 2 -> 1            | all          |
+| 77  | fetch limit 4, fetch2 buffer 2 -> 4                 | all          |
+|     | **the per-line cadence, the beat's real owner**     |              |
+| 78  | fetch2CycleInput False -> True                      | all          |
+| 79  | fetch2CycleInput True, fetch & buffer 2             | all          |
+|     | **the class law without the fill-0 phase artefact** |              |
+| 80  | flat fill, accept-and-charge                        | all          |
+| 81  | TEST 72 stack on the 79 frontend                    | all          |
+| 82  | adopted stack plus the serdiv turnaround            | all          |
+| 83  | adopted stack plus the divsqrt format law           | all          |
+| 84  | adopted stack plus all                              | all          |
+|     | **the final-check probes, on the adopted stack**    |              |
+| 85  | L1I mshrs 2 -> 1, the I-side retry tax              | all          |
+| 86  | fetch limit 3, fetch2 buffer 3                      | all          |
+| 87  | fetch limit 4, fetch2 buffer 3                      | all          |
+| 88  | L1I reopen at ready                                 | all          |
+|     | **the structural I-side**                           |              |
+| 89  | mshrs 1, reopen at ready, fetch1 holds              | all          |
+| 90  | ablation of 89 without reopen at ready              | all          |
+| 91  | the 89 with fetch limit 3 and buffer 3              | all          |
+| 92  | the 90 with fetch limit 3 and buffer 3              | all          |
+| 93  | the 92 with the fill readable at the fill           | all          |
+| 94  | the 93 with kill on redirect                        | all          |
+| 95  | the whole structural I-side, TEST 99's stack        | all          |
+|     | **full patch baseline**                             |              |
+| 99  | full production                                     | all          |
 
 ## The patch
 
@@ -238,58 +238,58 @@ Since every added parameter defaults off, the patched binary running `gem5_confi
 
 ### New parameters
 
-| Parameter | Object | Default | What it does |
-| --- | --- | --- | --- |
-| `executeLSQNoStoreForwarding` | MinorCPU | `False` | Disables store-to-load forwarding from the store buffer |
-| `executeLSQStoreCollisionReplayDelay` | MinorCPU | `0` | Cycles a load waits after a store collision clears |
-| `executeLSQFenceSignalsDcache` | MinorCPU | `False` | A fence signals the data cache, modelling the core's flush wire |
-| `directTargetsFromDecode` | BranchPredictor | `False` | Taken direct control takes its target from the decoded instruction and never installs in the BTB |
-| `executeFenceSquashesPipeline` | MinorCPU | `False` | A committed full fence squashes the pipeline and restarts fetch at the next PC |
-| `rasNoRecovery` | BranchPredictor | `False` | Speculative RAS pushes and pops stand uncorrected on a squash, as CVA6's scan-driven stack |
-| `evict_on_allocate` | Cache | `False` | Selects the victim and issues its writeback at MSHR allocation |
-| `victim_readout_stall` | Cache | `False` | Charges the dirty-victim data-array readout, `blkSize / 8` cycles |
-| `victim_readout_store_extra` | Cache | `0` | Extra readout-window cycles when a store triggered the eviction |
-| `victim_readout_first_load_extra` | Cache | `0` | Extra readout-window cycles when a lone load triggered the eviction |
-| `refill_window_blocks` | Cache | `False` | Blocks the CPU side for `blkSize / 8` cycles while a refill writes the data array. **Not enabled in either production configuration**: it is set only in `gem5_config_CVA6_Patch_testing.py`, where four entries use it, and `window_accept_and_charge` carries the delivered form of the same cost |
-| `window_accept_and_charge` | Cache | `False` | The accept-and-charge form of both windows: the port never blocks, a request inside a window takes the overlap as latency, the miss that opens a readout window takes it on its own fill |
-| `victim_readable_until_fill` | Cache | `False` | Keeps the victim answering hits until its refill lands |
-| `fill_delay` | Cache | `0` | Extra cycles from response arrival to fill, without touching shared memory latency |
-| `fence_flushes_dcache` | Cache | `False` | A fence writes back every dirty line and holds the cache 2 cycles per line |
-| `fetch1WaitsForIcache` | MinorCPU | `False` | Fetch1 holds a line at the ready line instead of paying a refusal and a retry, since `cva6_icache.sv` asserts `dreq_o.ready` only in IDLE and READ |
-| `fetch1KillsOnRedirect` | MinorCPU | `False` | Every in-flight line frees its fetch slot at the redirect, the frontend side of `kill_s1` and `kill_s2` |
-| `fill_ready_at_fill` | Cache | `False` | A block is readable at the fill instant, since the icache writes the line in the fill-ack cycle, so the bus terms are not charged twice |
-| `reopen_at_ready` | Cache | `False` | Defers the full-MSHR retry until that block is readable |
+| Parameter                             | Object          | Default | What it does                                                                                                                                                                                                                                                                                        |
+| ------------------------------------- | --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `executeLSQNoStoreForwarding`         | MinorCPU        | `False` | Disables store-to-load forwarding from the store buffer                                                                                                                                                                                                                                             |
+| `executeLSQStoreCollisionReplayDelay` | MinorCPU        | `0`     | Cycles a load waits after a store collision clears                                                                                                                                                                                                                                                  |
+| `executeLSQFenceSignalsDcache`        | MinorCPU        | `False` | A fence signals the data cache, modelling the core's flush wire                                                                                                                                                                                                                                     |
+| `directTargetsFromDecode`             | BranchPredictor | `False` | Taken direct control takes its target from the decoded instruction and never installs in the BTB                                                                                                                                                                                                    |
+| `executeFenceSquashesPipeline`        | MinorCPU        | `False` | A committed full fence squashes the pipeline and restarts fetch at the next PC                                                                                                                                                                                                                      |
+| `rasNoRecovery`                       | BranchPredictor | `False` | Speculative RAS pushes and pops stand uncorrected on a squash, as CVA6's scan-driven stack                                                                                                                                                                                                          |
+| `evict_on_allocate`                   | Cache           | `False` | Selects the victim and issues its writeback at MSHR allocation                                                                                                                                                                                                                                      |
+| `victim_readout_stall`                | Cache           | `False` | Charges the dirty-victim data-array readout, `blkSize / 8` cycles                                                                                                                                                                                                                                   |
+| `victim_readout_store_extra`          | Cache           | `0`     | Extra readout-window cycles when a store triggered the eviction                                                                                                                                                                                                                                     |
+| `victim_readout_first_load_extra`     | Cache           | `0`     | Extra readout-window cycles when a lone load triggered the eviction                                                                                                                                                                                                                                 |
+| `refill_window_blocks`                | Cache           | `False` | Blocks the CPU side for `blkSize / 8` cycles while a refill writes the data array. **Not enabled in either production configuration**: it is set only in `gem5_config_CVA6_Patch_testing.py`, where four entries use it, and `window_accept_and_charge` carries the delivered form of the same cost |
+| `window_accept_and_charge`            | Cache           | `False` | The accept-and-charge form of both windows: the port never blocks, a request inside a window takes the overlap as latency, the miss that opens a readout window takes it on its own fill                                                                                                            |
+| `victim_readable_until_fill`          | Cache           | `False` | Keeps the victim answering hits until its refill lands                                                                                                                                                                                                                                              |
+| `fill_delay`                          | Cache           | `0`     | Extra cycles from response arrival to fill, without touching shared memory latency                                                                                                                                                                                                                  |
+| `fence_flushes_dcache`                | Cache           | `False` | A fence writes back every dirty line and holds the cache 2 cycles per line                                                                                                                                                                                                                          |
+| `fetch1WaitsForIcache`                | MinorCPU        | `False` | Fetch1 holds a line at the ready line instead of paying a refusal and a retry, since `cva6_icache.sv` asserts `dreq_o.ready` only in IDLE and READ                                                                                                                                                  |
+| `fetch1KillsOnRedirect`               | MinorCPU        | `False` | Every in-flight line frees its fetch slot at the redirect, the frontend side of `kill_s1` and `kill_s2`                                                                                                                                                                                             |
+| `fill_ready_at_fill`                  | Cache           | `False` | A block is readable at the fill instant, since the icache writes the line in the fill-ack cycle, so the bus terms are not charged twice                                                                                                                                                             |
+| `reopen_at_ready`                     | Cache           | `False` | Defers the full-MSHR retry until that block is readable                                                                                                                                                                                                                                             |
 
 ### New SimObjects
 
-| Object | What it is |
-| --- | --- |
-| `Axi2MemPort` | The CVA6 testbench memory adapter: one transaction at a time, fixed read priority, `1 + N` cycle occupancy for `N` eight-byte beats |
-| `HPDcacheRandomRP` | The L1D victim policy the build configures: four tiers, with an 8-bit Galois LFSR, polynomial `0xE1` |
-| `HPDcachePLRURP` | The L1D bit-PLRU branch the build does **not** configure |
-| `CVA6IcacheRandomRP` | The L1I policy: lowest-index invalid way, else an 8-bit Galois LFSR, polynomial `0xFA` |
+| Object               | What it is                                                                                                                          |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `Axi2MemPort`        | The CVA6 testbench memory adapter: one transaction at a time, fixed read priority, `1 + N` cycle occupancy for `N` eight-byte beats |
+| `HPDcacheRandomRP`   | The L1D victim policy the build configures: four tiers, with an 8-bit Galois LFSR, polynomial `0xE1`                                |
+| `HPDcachePLRURP`     | The L1D bit-PLRU branch the build does **not** configure                                                                            |
+| `CVA6IcacheRandomRP` | The L1I policy: lowest-index invalid way, else an 8-bit Galois LFSR, polynomial `0xFA`                                              |
 
 ### New statistics
 
 The patch leaves every stock counter untouched and adds its own beside them.
 
-| Statistic | Object | What it counts |
-| --- | --- | --- |
-| `preemptionBlockedCycles` | Cache | Cycles blocked by a CVA6 preemption cause: victim readout, fence flush or refill window |
-| `cva6ComparableDemandAccesses` | Cache | Demand accesses plus the preemption and window cycles below, the count the HPDcache PMU reports |
-| `earlyReservations` | Cache | Victims reserved at miss time by evict-on-allocate |
-| `reservationFallbacks` | Cache | Misses that fell back to stock fill-time allocation |
-| `inPlaceReservations` | Cache | Reservations that kept the victim readable |
-| `reservationRedirties` | Cache | In-place victims dirtied again before their refill landed, so written back twice |
-| `fenceFlushes` | Cache | Full flushes a fence triggered |
-| `fenceFlushWritebacks` | Cache | Dirty lines those flushes wrote back |
-| `windowTriggerCharges`, `windowTriggerCycles` | Cache | Misses charged their own readout window under accept-and-charge, and the cycles |
-| `windowOverlapCharges`, `windowOverlapCycles` | Cache | Requests charged a window overlap, and the cycles |
-| `reservationUpgradeFallbacks` | Cache | In-place reservations released at fill time because an upgrade on the victim was still outstanding |
-| `unusedTier`, `randomTier`, `cleanTier`, `dirtyTier`, `noVictim` | HPDcacheRandomRP | Which tier of the victim policy supplied each selection |
-| `readsAdmitted`, `writesAdmitted` | Axi2MemPort | Transactions admitted to the single port, by class |
-| `passThrough` | Axi2MemPort | Packets with no AXI equivalent, forwarded without occupancy |
-| `readWaitCycles`, `writeWaitCycles` | Axi2MemPort | Admission wait histograms, by class |
+| Statistic                                                        | Object           | What it counts                                                                                     |
+| ---------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `preemptionBlockedCycles`                                        | Cache            | Cycles blocked by a CVA6 preemption cause: victim readout, fence flush or refill window            |
+| `cva6ComparableDemandAccesses`                                   | Cache            | Demand accesses plus the preemption and window cycles below, the count the HPDcache PMU reports    |
+| `earlyReservations`                                              | Cache            | Victims reserved at miss time by evict-on-allocate                                                 |
+| `reservationFallbacks`                                           | Cache            | Misses that fell back to stock fill-time allocation                                                |
+| `inPlaceReservations`                                            | Cache            | Reservations that kept the victim readable                                                         |
+| `reservationRedirties`                                           | Cache            | In-place victims dirtied again before their refill landed, so written back twice                   |
+| `fenceFlushes`                                                   | Cache            | Full flushes a fence triggered                                                                     |
+| `fenceFlushWritebacks`                                           | Cache            | Dirty lines those flushes wrote back                                                               |
+| `windowTriggerCharges`, `windowTriggerCycles`                    | Cache            | Misses charged their own readout window under accept-and-charge, and the cycles                    |
+| `windowOverlapCharges`, `windowOverlapCycles`                    | Cache            | Requests charged a window overlap, and the cycles                                                  |
+| `reservationUpgradeFallbacks`                                    | Cache            | In-place reservations released at fill time because an upgrade on the victim was still outstanding |
+| `unusedTier`, `randomTier`, `cleanTier`, `dirtyTier`, `noVictim` | HPDcacheRandomRP | Which tier of the victim policy supplied each selection                                            |
+| `readsAdmitted`, `writesAdmitted`                                | Axi2MemPort      | Transactions admitted to the single port, by class                                                 |
+| `passThrough`                                                    | Axi2MemPort      | Packets with no AXI equivalent, forwarded without occupancy                                        |
+| `readWaitCycles`, `writeWaitCycles`                              | Axi2MemPort      | Admission wait histograms, by class                                                                |
 
 The metrics table uses three of these: `preemptionBlockedCycles`, `windowTriggerCycles` and `windowOverlapCycles`. `run_gem5.py` adds them to the cache-access rows and prints the result as a third column, `NET (CVA6)`, next to `NET`, so a gem5 table reads against a CVA6 one row for row.
 

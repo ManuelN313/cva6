@@ -16,6 +16,7 @@ import sys
 import shutil
 import argparse
 
+
 def repo_root():
     """The repository this script sits in, found by walking up to the nearest
     .git. The script lives in scripts/, so counting parents would be one more
@@ -43,7 +44,8 @@ DEFAULT_TARGET_CFG = "cv64a6_imafdc_sv39_hpdcache_wb"
 # which keeps its own list under its own variable.
 FLISTS = [
     os.path.join("core", "Flist.cva6"),
-    os.path.join("core", "cache_subsystem", "hpdcache", "rtl", "hpdcache.Flist"),
+    os.path.join("core", "cache_subsystem",
+                 "hpdcache", "rtl", "hpdcache.Flist"),
 ]
 
 # What an +incdir+ entry contributes. The directory is read one level deep,

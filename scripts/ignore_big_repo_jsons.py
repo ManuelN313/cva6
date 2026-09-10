@@ -42,6 +42,7 @@ DEFAULT_LIMIT_MIB = 50
 BEGIN = "## BEGIN oversized JSONs"
 END = "## END oversized JSONs"
 
+
 def repo_root():
     """The repository this script sits in, found by walking up to the nearest
     .git. The script lives in scripts/, so counting parents would be one more
@@ -279,7 +280,8 @@ def main():
             print(f"           git rm --cached {rel}")
         print()
 
-    here = [s for s in SUBMODULES if os.path.isfile(os.path.join(REPO_ROOT, s))]
+    here = [s for s in SUBMODULES if os.path.isfile(
+        os.path.join(REPO_ROOT, s))]
     if here:
         print("[INFO] The viewers keep their own .gitignore. For those, run:")
         for sub in here:
