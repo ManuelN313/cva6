@@ -52,9 +52,8 @@ from m5.objects import (  # type: ignore
 # calibration campaign, with its observation in the entry's own comment.
 #
 # The table is ordered by what a TEST needs to run. TESTS 1 to 39 use nothing
-# the patch adds, and are the same entries, under the same numbers, as in
-# gem5_config_CVA6_testing.py. TESTS 40 to 95 and TEST 99 need
-# MinorCPU_CVA6.patch.
+# the patch adds and match gem5_config_CVA6_testing.py entry for entry. TESTS
+# 40 to 95 and TEST 99 need MinorCPU_CVA6.patch.
 #
 # TEST table fields (unchanged shape):
 #   (name, cpu_overrides, l1i_size, l1d_size, dcache_overrides,
