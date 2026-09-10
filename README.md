@@ -49,15 +49,16 @@ Most of the tree is the standard CORE-V CVA6 layout. The pieces most relevant to
 | `vendor/`                                       | Vendored upstream dependencies, pinned so nothing is fetched.                                      |
 | `gem5_config_CVA6/CVA6/`                        | The CVA6 side of the calibration: its benchmarks, the target's configuration package, and the traces under `tests/`. |
 | `gem5_config_CVA6/gem5/`                        | The gem5 side: its benchmarks, the configurations and the patch under `configs/`, and the traces under `tests/`. |
-| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `docker_sync.py`, `create_all_CVA6_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_repo_jsons.py`, `get_CVA6_files.py`, `serve_viewers.py` and the calibration sweep. |
+| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `docker_sync.py`, `make_containers.py`, `create_all_CVA6_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_repo_jsons.py`, `get_CVA6_files.py`, `serve_viewers.py` and the calibration sweep. |
 | `viewers/MinorFlow`                             | The MinorFlow visualizer, as a submodule.                                                          |
 | `viewers/CVA6Flow`                              | The CVA6Flow visualizer, as a submodule.                                                           |
 | `gem5_config_CVA6/`                             | The gem5 configuration matched to CVA6, and the gem5 patch it depends on.                          |
 | `dockerfiles/`                                  | The two image recipes. The container copier is `scripts/docker_sync.py` and the small HTTP server that puts a viewer in the host's browser is `scripts/serve_viewers.py`. |
-| `scripts/check_CVA6_repo.py`                    | Checks this fork's own files: the scripts kept in two places, the calibration tables, the patch, the Dockerfiles, the viewer pages, the links and the formatting. Each viewer has the same tool for itself, `check_MinorFlow_repo.py` and `check_CVA6Flow_repo.py`, sharing this one's helpers and check protocol. |
+| `scripts/check_CVA6_repo.py`                    | Checks this fork's own files: the scripts, the calibration tables, the patch, the Dockerfiles, the viewer pages, the links, the comment prose and the formatting. Each viewer has the same tool for itself, `check_MinorFlow_repo.py` and `check_CVA6Flow_repo.py`, sharing this one's helpers and check protocol. |
 | `scripts/clean_CVA6_repo.py`                            | Deletes the `.list`, `.vcd`, `.fst`, traces and `__pycache__` left in this repository, then offers to run each viewer's own cleaner. |
 | `scripts/ignore_big_repo_jsons.py`                            | Lists the tracer JSONs too big for GitHub in `.gitignore`.                                         |
 | `scripts/serve_viewers.py`                      | Serves the viewer pages over HTTP, so a container with no browser can put one in the host's. Both images copy it to their root, where it runs as `python3 serve_viewers.py`. |
+| `scripts/make_containers.py`                    | Creates both containers, or one, with CPU and memory limits and the viewer port published. Reads what the Docker daemon actually has, picks a build job count that fits, and refuses rather than failing partway. |
 | `LICENSE.FaMAF`                                 | MIT licence covering this project's own work.                                                      |
 | `LICENSE`, `LICENSE.Berkeley`, `LICENSE.SiFive` | Upstream licences, preserved.                                                                      |
 
@@ -381,6 +382,16 @@ docker run -it --name cva6 -p 8000:8000 \
 ```
 
 `-p 8000:8000` is what lets `serve_viewers.py` put CVA6Flow in the host's browser later.
+
+Or let [`scripts/make_containers.py`](scripts/make_containers.py) do it. It reads what the Docker daemon actually has, publishes the port, passes the display through, and caps CPU and memory so a simulation cannot take the machine down with it:
+
+```bash
+python3 scripts/make_containers.py --check    # what this machine can do
+python3 scripts/make_containers.py --pull     # both containers
+python3 scripts/make_containers.py cva6       # just this one
+```
+
+It refuses rather than failing partway when memory or disk is short, leaves an existing container alone unless `--force` says otherwise, and `-n` prints the commands without running them. With `--build` it builds from this working tree instead of pulling, choosing a `JOBS` value from the daemon's memory rather than the default in the recipe.
 
 Type `exit` to leave.
 
