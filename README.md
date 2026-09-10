@@ -41,26 +41,28 @@ git submodule update --init --recursive
 
 Most of the tree is the standard CORE-V CVA6 layout. The pieces most relevant to this project:
 
-| Path                                            | What it is                                                                                         |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `core/`                                         | The CVA6 core RTL (SystemVerilog).                                                                 |
-| `corev_apu/`                                    | The SoC wrapper and testbench infrastructure.                                                      |
-| `verif/`                                        | Verification and simulation harness (Verilator under `verif/sim`).                                 |
-| `vendor/`                                       | Vendored upstream dependencies, pinned so nothing is fetched.                                      |
-| `gem5_config_CVA6/CVA6/`                        | The CVA6 side of the calibration: its benchmarks, the target's configuration package, and the traces under `tests/`. |
-| `gem5_config_CVA6/gem5/`                        | The gem5 side: its benchmarks, the configurations and the patch under `configs/`, and the traces under `tests/`. |
-| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `docker_sync.py`, `make_containers.py`, `create_all_CVA6_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_repo_jsons.py`, `get_CVA6_files.py`, `serve_viewers.py` and the calibration sweep. |
-| `viewers/MinorFlow`                             | The MinorFlow visualizer, as a submodule.                                                          |
-| `viewers/CVA6Flow`                              | The CVA6Flow visualizer, as a submodule.                                                           |
-| `gem5_config_CVA6/`                             | The gem5 configuration matched to CVA6, and the gem5 patch it depends on.                          |
-| `dockerfiles/`                                  | The two image recipes. The container copier is `scripts/docker_sync.py` and the small HTTP server that puts a viewer in the host's browser is `scripts/serve_viewers.py`. |
-| `scripts/check_CVA6_repo.py`                    | Checks this fork's own files: the scripts, the calibration tables, the patch, the Dockerfiles, the viewer pages, the links, the comment prose and the formatting. Each viewer has the same tool for itself, `check_MinorFlow_repo.py` and `check_CVA6Flow_repo.py`, sharing this one's helpers and check protocol. |
-| `scripts/clean_CVA6_repo.py`                            | Deletes the `.list`, `.vcd`, `.fst`, traces and `__pycache__` left in this repository, then offers to run each viewer's own cleaner. |
-| `scripts/ignore_big_repo_jsons.py`                            | Lists the tracer JSONs too big for GitHub in `.gitignore`.                                         |
-| `scripts/serve_viewers.py`                      | Serves the viewer pages over HTTP, so a container with no browser can put one in the host's. Both images copy it to their root, where it runs as `python3 serve_viewers.py`. |
-| `scripts/make_containers.py`                    | Creates both containers, or one, with CPU and memory limits and the viewer port published. Reads what the Docker daemon actually has, picks a build job count that fits, and refuses rather than failing partway. |
-| `LICENSE.FaMAF`                                 | MIT licence covering this project's own work.                                                      |
-| `LICENSE`, `LICENSE.Berkeley`, `LICENSE.SiFive` | Upstream licences, preserved.                                                                      |
+| Path                                            | What it is                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `core/`                                         | The CVA6 core RTL (SystemVerilog).                                                                                                                                                                                                                                                                                       |
+| `corev_apu/`                                    | The SoC wrapper and testbench infrastructure.                                                                                                                                                                                                                                                                            |
+| `verif/`                                        | Verification and simulation harness (Verilator under `verif/sim`).                                                                                                                                                                                                                                                       |
+| `vendor/`                                       | Vendored upstream dependencies, pinned so nothing is fetched.                                                                                                                                                                                                                                                            |
+| `gem5_config_CVA6/CVA6/`                        | The CVA6 side of the calibration: its benchmarks, the target's configuration package, and the traces under `tests/`.                                                                                                                                                                                                     |
+| `gem5_config_CVA6/gem5/`                        | The gem5 side: its benchmarks, the configurations and the patch under `configs/`, and the traces under `tests/`.                                                                                                                                                                                                         |
+| `scripts/`                                      | The repository-wide tools: `check_CVA6_repo.py`, `format_CVA6_repo.py`, `docker_sync.py`, `make_containers.py`, `create_all_CVA6_repo_jsons.py`, `clean_CVA6_repo.py`, `ignore_big_CVA6_repo_jsons.py`, `get_CVA6_files.py`, `serve_viewers.py` and the calibration sweep.                                               |
+| `viewers/MinorFlow`                             | The MinorFlow visualizer, as a submodule.                                                                                                                                                                                                                                                                                |
+| `viewers/CVA6Flow`                              | The CVA6Flow visualizer, as a submodule.                                                                                                                                                                                                                                                                                 |
+| `gem5_config_CVA6/`                             | The gem5 configuration matched to CVA6, and the gem5 patch it depends on.                                                                                                                                                                                                                                                |
+| `dockerfiles/`                                  | The two image recipes. The container copier is `scripts/docker_sync.py` and the small HTTP server that puts a viewer in the host's browser is `scripts/serve_viewers.py`.                                                                                                                                                |
+| `verilator_changes/`                            | Modified copies of two upstream files, each carrying a notice of change. `custom_size_vcds/` windows the waveform dump so a long benchmark can be traced, and has [its own README](verilator_changes/custom_size_vcds/README.md).                                                                                        |
+| `scripts/check_CVA6_repo.py`                    | Checks this fork's own files: the scripts, the calibration tables, the patch, the Dockerfiles, the viewer pages, the links, the comment prose and the formatting. Each viewer has the same tool for itself, `check_MinorFlow_repo.py` and `check_CVA6Flow_repo.py`, sharing this one's helpers and check protocol.       |
+| `scripts/clean_CVA6_repo.py`                    | Deletes the `.list`, `.vcd`, `.fst`, traces and `__pycache__` left in this repository, then offers to run each viewer's own cleaner.                                                                                                                                                                                     |
+| `scripts/ignore_big_CVA6_repo_jsons.py`         | Lists the tracer JSONs too big for GitHub in `.gitignore`.                                                                                                                                                                                                                                                               |
+| `scripts/serve_viewers.py`                      | Serves the viewer pages over HTTP, so a container with no browser can put one in the host's. Both images copy it to their root, where it runs as `python3 serve_viewers.py`.                                                                                                                                             |
+| `scripts/make_containers.py`                    | Creates both containers, or one, with CPU and memory limits and the viewer port published. Reads what the Docker daemon actually has, picks a build job count that fits, and refuses rather than failing partway.                                                                                                        |
+| `scripts/format_CVA6_repo.py`                   | Formats this fork's own Python with autopep8 at 79 columns and its Markdown with Prettier. Scope is the same `OWN_PATHS` the checker uses, so upstream files are never touched, and C++ and Makefiles are out of scope. `--check` reports without changing, which is what `check_CVA6_repo.py`'s `formatter` check runs. |
+| `LICENSE.FaMAF`                                 | MIT licence covering this project's own work.                                                                                                                                                                                                                                                                            |
+| `LICENSE`, `LICENSE.Berkeley`, `LICENSE.SiFive` | Upstream licences, preserved.                                                                                                                                                                                                                                                                                            |
 
 Everything else (`common/`, `util/`, `pd/`, `spyglass/`, `ci/`, `cva6_docs/` and so on) is standard upstream CVA6.
 
@@ -124,13 +126,13 @@ Matching the gem5 model to CVA6 meant perturbing one part of the pipeline at a t
 #  22   fp_addmul without the double mask         workload: fp_addmul
 ```
 
-`run_CVA6_testing_sweep.py`, next to it, replays the whole thing. It always sweeps its own `DEFAULT_CONFIG`, the file it is written for. Run it from `/gem5`:
+`run_config_search_sweep.py`, next to it, replays the whole thing. It always sweeps its own `DEFAULT_CONFIG`, the file it is written for. Run it from `/gem5`:
 
 ```bash
-python3 run_CVA6_testing_sweep.py [-j N] [--configs 1,4-6] [--tests daxpy,full_test] [--variant patch|stock] [--no-trace] [--list]
+python3 run_config_search_sweep.py [-j N] [--configs 1,4-6] [--tests daxpy,full_test] [--variant patch|stock] [--no-trace] [--list]
 ```
 
-It defaults to `--variant patch`, since `DEFAULT_CONFIG` sets parameters only the patch provides. For each configuration it sets `TEST`, runs that entry's workloads through `run_gem5.py`, and moves the results into `CVA6_testing_sweep_results/` tagged `.config<N>`, plus one gathered metrics file named after the sweep, `metrics_<config>_<variant>...txt`. An entry whose workload is `all` runs `DEFAULT_ALL_TESTS`, the set the baseline was calibrated against, which is wider than what the perturbation rows name.
+It defaults to `--variant patch`, since `DEFAULT_CONFIG` sets parameters only the patch provides. For each configuration it sets `TEST`, runs that entry's workloads through `run_gem5.py`, and moves the results into `config_testing_sweep_results/` tagged `.config<N>`, plus one gathered metrics file named after the sweep, `metrics_<config>_<variant>...txt`. An entry whose workload is `all` runs `DEFAULT_ALL_TESTS`, the set the baseline was calibrated against, which is wider than what the perturbation rows name.
 
 The sweep runs `-j` at once, 4 by default, each in its own folder under `m5out/` and `run_results/`, deleted once collected. A run that **fails** keeps its folder, under `m5out/config<N>_<test>/`, together with the configuration copy it ran. Both parent folders are removed only if the sweep leaves them empty, since a plain `run_gem5.py` run writes into them too.
 
@@ -159,18 +161,18 @@ It only ever opens `gem5_config_CVA6/` and `benchmarks/`. The two viewers are se
 
 There are five cleaning scripts in all, and the names say which tree each one touches:
 
-| Script | Where | What it deletes |
-| --- | --- | --- |
-| `scripts/clean_CVA6_repo.py` | repository root | Committed-tree artefacts here, then offers the two below it |
-| `viewers/MinorFlow/clean_MinorFlow_repo.py` | MinorFlow checkout | The same, in that repository, keeping `docs/` whole |
-| `viewers/CVA6Flow/clean_CVA6Flow_repo.py` | CVA6Flow checkout | The same, in that repository, keeping `docs/` whole |
-| `clean_gem5_runs.py` | gem5 root | What a gem5 run leaves: `m5out/`, `batch_results/`, sweep folders, `run_results/` |
-| `clean_CVA6_runs.py` | CVA6 root | What a CVA6 run leaves: `out_<date>/`, `work-ver/`, `batch_results/`, `run_results/` |
+| Script                                      | Where              | What it deletes                                                                      |
+| ------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------ |
+| `scripts/clean_CVA6_repo.py`                | repository root    | Committed-tree artefacts here, then offers the two below it                          |
+| `viewers/MinorFlow/clean_MinorFlow_repo.py` | MinorFlow checkout | The same, in that repository, keeping `docs/` whole                                  |
+| `viewers/CVA6Flow/clean_CVA6Flow_repo.py`   | CVA6Flow checkout  | The same, in that repository, keeping `docs/` whole                                  |
+| `clean_gem5_runs.py`                        | gem5 root          | What a gem5 run leaves: `m5out/`, `batch_results/`, sweep folders, `run_results/`    |
+| `clean_CVA6_runs.py`                        | CVA6 root          | What a CVA6 run leaves: `out_<date>/`, `work-ver/`, `batch_results/`, `run_results/` |
 
 A tracer JSON survives all of that, since it is what the viewers read, but it is too big to commit: GitHub warns above 50 MiB and refuses above 100 MiB, and a full run leaves several over 200.
 
 ```bash
-python3 scripts/ignore_big_repo_jsons.py [-y] [--dry-run] [-v] [-l MIB] [--prune]
+python3 scripts/ignore_big_CVA6_repo_jsons.py [-y] [--dry-run] [-v] [-l MIB] [--prune]
 ```
 
 Run it after a sweep. It only ever adds, so a second run changes nothing. `--prune` drops the entries whose file has gone or shrunk, and `-l` sets a different threshold in MiB. A file git already tracks is reported rather than ignored, since an ignore rule has no effect on a file git is already carrying.
@@ -188,7 +190,7 @@ It comes in two versions, so the same core can be run on either gem5 build:
 - `gem5_config_CVA6/gem5/configs/gem5_config_CVA6.py` runs on a **stock gem5**, using only what upstream already provides.
 - `gem5_config_CVA6/gem5/configs/gem5_config_CVA6_Patch.py` runs on a **patched gem5** and adds the mechanisms the patch makes available.
 
-Each has a `_testing` twin, `gem5_config_CVA6_testing.py` and `gem5_config_CVA6_Patch_testing.py`, which is the same core wrapped in the calibration table of single-knob perturbations that `run_CVA6_testing_sweep.py` replays.
+Each has a `_testing` twin, `gem5_config_CVA6_testing.py` and `gem5_config_CVA6_Patch_testing.py`, which is the same core wrapped in the calibration table of single-knob perturbations that `run_config_search_sweep.py` replays.
 
 #### Why there is a patch
 
@@ -301,10 +303,10 @@ docker build -f dockerfiles/gem5/Dockerfile -t famaf/gem5 .
 
 **These are heavy builds.** The cost is the RISC-V toolchain on the CVA6 side and two full gem5 builds on the gem5 side.
 
-| | Disk while building | Finished image | Time | Memory per job |
-| --- | --- | --- | --- | --- |
-| `famaf/cva6` | ~30 GB | ~14 GB | 2 to 4 h | ~2 GB |
-| `famaf/gem5` | ~25 GB | ~12 GB | 1 to 3 h | ~4 GB |
+|              | Disk while building | Finished image | Time     | Memory per job |
+| ------------ | ------------------- | -------------- | -------- | -------------- |
+| `famaf/cva6` | ~30 GB              | ~14 GB         | 2 to 4 h | ~2 GB          |
+| `famaf/gem5` | ~25 GB              | ~12 GB         | 1 to 3 h | ~4 GB          |
 
 Memory is what actually fails a build, and it fails as a compiler killed with no useful message. Both recipes take a `JOBS` argument, and it should be no higher than your RAM in GB divided by the per-job figure above:
 
@@ -333,7 +335,7 @@ docker cp gem5_config_CVA6/gem5/.       gem5:/gem5/
 # container -> host: what a run produced
 docker cp cva6:/cva6/run_results/                ./run_results/
 docker cp gem5:/gem5/batch_results/              ./batch_results/
-docker cp gem5:/gem5/CVA6_testing_sweep_results/ ./
+docker cp gem5:/gem5/config_testing_sweep_results/ ./
 ```
 
 A trailing `/.` on the source copies the contents of a folder rather than the folder itself.
@@ -353,15 +355,15 @@ python3 scripts/docker_sync.py push -n   # say what would be copied
 
 **push** sends, per container:
 
-| What | Where it lands |
-| --- | --- |
-| The drivers, the sweeps and the cleaner | the container root, `/gem5` or `/cva6` |
-| The gem5 configurations and `MinorCPU_CVA6.patch` | `/gem5/` |
-| The CVA6Flow configuration package | `/cva6/core/include/`, which is where the build reads it |
-| The calibration benchmarks | `benchmarks/` |
-| The viewer's teaching set | `MinorFlow_benchmarks/` or `CVA6Flow_benchmarks/` |
-| The viewer page, its tracer and its batch tracer | `viewers/<viewer>/` |
-| `serve_viewers.py` | the container root |
+| What                                              | Where it lands                                           |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| The drivers, the sweeps and the cleaner           | the container root, `/gem5` or `/cva6`                   |
+| The gem5 configurations and `MinorCPU_CVA6.patch` | `/gem5/`                                                 |
+| The CVA6Flow configuration package                | `/cva6/core/include/`, which is where the build reads it |
+| The calibration benchmarks                        | `benchmarks/`                                            |
+| The viewer's teaching set                         | `MinorFlow_benchmarks/` or `CVA6Flow_benchmarks/`        |
+| The viewer page, its tracer and its batch tracer  | `viewers/<viewer>/`                                      |
+| `serve_viewers.py`                                | the container root                                       |
 
 It is the one to remember: a container keeps its own copy of everything, so editing `run_gem5.py` here changes nothing inside until it is pushed.
 
