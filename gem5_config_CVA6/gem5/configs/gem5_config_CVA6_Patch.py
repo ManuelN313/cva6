@@ -65,10 +65,9 @@ STORE_COLLISION_REPLAY_DELAY = 2
 VICTIM_READOUT_STORE_EXTRA = 4
 VICTIM_READOUT_FIRST_LOAD_EXTRA = 1
 
-# Miss-latency split, L1D only. L1D_FILL_DELAY is the flat split used
-# when the window mechanism is off. Under it the fill delay is 0,
-# because the readout window charges the trigger's own fill and a flat
-# delay on every fill would double-charge the base.
+# Miss-latency split, L1D only. L1D_FILL_DELAY is the flat split used when the
+# window mechanism is off. Under the window the fill delay is 0, because it
+# charges the trigger's own fill and a flat delay would double-charge.
 MEM_LATENCY = "0ns"
 L1D_FILL_DELAY = 2
 L1D_RESPONSE_LATENCY = 2
