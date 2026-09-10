@@ -22,10 +22,10 @@ ENV NUM_JOBS=${JOBS}
 # Toolchain build dependencies, the CVA6 flow's own, and the few conveniences
 # that make the container usable by hand.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        python3 python3-pip git wget curl nano less gtkwave \
-        autoconf automake autotools-dev libmpc-dev libmpfr-dev libgmp-dev \
-        gawk build-essential bison flex texinfo gperf libtool bc zlib1g-dev \
-        help2man device-tree-compiler ca-certificates \
+    python3 python3-pip git wget curl nano less gtkwave \
+    autoconf automake autotools-dev libmpc-dev libmpfr-dev libgmp-dev \
+    gawk build-essential bison flex texinfo gperf libtool bc zlib1g-dev \
+    help2man device-tree-compiler ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # CMake 3.27, newer than jammy ships and what the CVA6 flow expects.
@@ -34,7 +34,7 @@ RUN wget -q https://github.com/Kitware/CMake/releases/download/v3.27.9/cmake-3.2
     && mv /opt/cmake-3.27.9-linux-x86_64 /opt/cmake-3.27.9 \
     && rm cmake-3.27.9-linux-x86_64.tar.gz \
     && for b in cmake ccmake cpack ctest; do \
-           ln -sf /opt/cmake-3.27.9/bin/$b /usr/local/bin/$b; done
+    ln -sf /opt/cmake-3.27.9/bin/$b /usr/local/bin/$b; done
 
 ENV RISCV=/cva6/tools
 ENV PATH=/cva6/tools/bin:${PATH}
@@ -65,25 +65,25 @@ COPY . /cva6/
 # the gem5 configurations, the patch, the gem5 benchmarks and the MinorFlow
 # viewer along for no reason and make /cva6 read as something it is not.
 RUN rm -rf /cva6/gem5_config_CVA6/gem5 \
-           /cva6/viewers/MinorFlow \
-           /cva6/dockerfiles \
+    /cva6/viewers/MinorFlow \
+    /cva6/dockerfiles \
     && rm -f /cva6/scripts/get_CVA6_files.py \
-             /cva6/scripts/docker_sync.py \
-             /cva6/scripts/run_CVA6_testing_sweep.py
+    /cva6/scripts/docker_sync.py \
+    /cva6/scripts/run_CVA6_testing_sweep.py
 
 # The drivers run from /cva6, which is what the README documents and what the
 # hardcoded root expects, so they sit there rather than two folders down.
 RUN cp /cva6/viewers/CVA6Flow/scripts/run_CVA6.py \
-       /cva6/viewers/CVA6Flow/scripts/run_all_CVA6_benchmarks.py \
-       /cva6/viewers/CVA6Flow/scripts/clean_CVA6_runs.py /cva6/ \
+    /cva6/viewers/CVA6Flow/scripts/run_all_CVA6_benchmarks.py \
+    /cva6/viewers/CVA6Flow/scripts/clean_CVA6_runs.py /cva6/ \
     && mkdir -p /cva6/benchmarks \
     && cp /cva6/gem5_config_CVA6/CVA6/benchmarks/*.c \
-          /cva6/gem5_config_CVA6/CVA6/benchmarks/*.S /cva6/benchmarks/ \
+    /cva6/gem5_config_CVA6/CVA6/benchmarks/*.S /cva6/benchmarks/ \
     && cp /cva6/gem5_config_CVA6/CVA6/benchmarks/.overhead_suite \
-          /cva6/benchmarks/ \
+    /cva6/benchmarks/ \
     && chmod +x /cva6/*.py /cva6/scripts/*.py \
-                /cva6/viewers/CVA6Flow/*.py \
-                /cva6/viewers/CVA6Flow/scripts/*.py
+    /cva6/viewers/CVA6Flow/*.py \
+    /cva6/viewers/CVA6Flow/scripts/*.py
 
 COPY scripts/serve_viewers.py /cva6/serve_viewers.py
 

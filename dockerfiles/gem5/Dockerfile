@@ -24,18 +24,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 # gem5's own build dependencies, then the bare-metal RISC-V toolchain the
 # benchmark driver calls. riscv64-unknown-elf-gcc is the one it wants.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential scons python3-dev python3-venv python3-pip git \
-        zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev \
-        libgoogle-perftools-dev libboost-all-dev libhdf5-serial-dev \
-        python3-pydot python3-tk m4 libcapstone-dev libpng-dev libelf-dev \
-        pkg-config wget cmake doxygen clang-format nano less \
-        gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf \
+    build-essential scons python3-dev python3-venv python3-pip git \
+    zlib1g zlib1g-dev libprotobuf-dev protobuf-compiler libprotoc-dev \
+    libgoogle-perftools-dev libboost-all-dev libhdf5-serial-dev \
+    python3-pydot python3-tk m4 libcapstone-dev libpng-dev libelf-dev \
+    pkg-config wget cmake doxygen clang-format nano less \
+    gcc-riscv64-unknown-elf binutils-riscv64-unknown-elf \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # The benchmarks are built for the extension set the CVA6 target implements.
 RUN echo 'int main(void){return 0;}' > /tmp/probe.c && \
     riscv64-unknown-elf-gcc -march=rv64gc_zba_zbb_zbs_zbc_zbkb_zbkx_zkne_zknd_zknh \
-        -mabi=lp64d -nostdlib -nostartfiles -c /tmp/probe.c -o /tmp/probe.o && \
+    -mabi=lp64d -nostdlib -nostartfiles -c /tmp/probe.c -o /tmp/probe.o && \
     rm -f /tmp/probe.c /tmp/probe.o && \
     echo "[ok] toolchain accepts the benchmark -march string"
 
@@ -68,11 +68,11 @@ COPY scripts/serve_viewers.py                             /gem5/serve_viewers.py
 # The tests themselves, in the folder run_all_gem5_benchmarks.py looks in by
 # default. Only the programs: the drivers above are the ones that run them.
 COPY gem5_config_CVA6/gem5/benchmarks/*.c \
-     gem5_config_CVA6/gem5/benchmarks/*.S /gem5/benchmarks/
+    gem5_config_CVA6/gem5/benchmarks/*.S /gem5/benchmarks/
 COPY gem5_config_CVA6/gem5/benchmarks/.overhead_suite /gem5/benchmarks/
 
 RUN chmod +x /gem5/*.py /gem5/viewers/MinorFlow/*.py \
-             /gem5/viewers/MinorFlow/scripts/*.py
+    /gem5/viewers/MinorFlow/scripts/*.py
 
 # The viewers are served rather than opened in the container
 EXPOSE 8000
