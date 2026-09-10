@@ -13,12 +13,6 @@
 # to the Verilator build as -DSTART_TRACE_CYCLE and -DEND_TRACE_CYCLE, which
 # the modified ariane_tb.cpp beside this file uses to window the waveform dump.
 #
-# Known difference to reconcile: this copy sets XILINX_BOARD to
-# xilinx.com:vc707:part0:1.3 where the current root Makefile sets 1.4. That is
-# a consequence of this copy having been taken from an earlier upstream
-# revision, not a deliberate change, and it matters only to the FPGA flow,
-# which this project does not run.
-#
 # This notice is required by Apache License 2.0 section 4(b), which governs the
 # original file and requires modified files to carry prominent notices stating
 # that they were changed.
