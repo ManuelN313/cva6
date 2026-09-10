@@ -200,7 +200,7 @@ index dd427b7..6993739 100644
      if (icachePort.sendTimingReq(request->packet)) {
          /* Invalidate the fetch_requests packet so we don't
           *  accidentally fail to deallocate it (or use it!)
-@@ -381,18 +415,38 @@ void
+@@ -381,18 +415,36 @@ void
  Fetch1::popAndDiscard(FetchQueue &queue)
  {
      if (!queue.empty()) {
@@ -225,11 +225,9 @@ index dd427b7..6993739 100644
 +unsigned int
 +Fetch1::numInFlightFetches()
 +{
-+    /* A killed line holds its queue slot until it drains but has already
-+     * given its Fetch2 reservation back, so it must not count against the
-+     * fetch limit. Both are unsigned, so a broken invariant wraps and the
-+     * fetch limit is never met again. panic_if survives the fast build,
-+     * where a plain assert would let that wedge pass silently. */
++    /* A killed line has handed its Fetch2 reservation back but still holds
++     * its queue slot, so it must not count against the fetch limit. Both
++     * counts are unsigned, so a broken invariant wraps rather than trips. */
 +    panic_if(killedInFlight > numQueuedFetches(),
 +        "%s: killedInFlight %u exceeds queued %u, the fetch limit would "
 +        "wrap and stall the front end permanently\n",
