@@ -50,9 +50,8 @@ DEFAULT_OUT_DIR = "container_results"
 NEVER_PULL = {"work-ver", "work-dpi", "build", "__pycache__"}
 
 # What each container holds. The push lists are the two folders the images are
-# meant to look like: the drivers and sweeps at the root, the calibration
-# benchmarks in benchmarks/ and the viewer's teaching set beside them, the
-# viewer itself under viewers/ with the server that puts it in the browser.
+# meant to look like: drivers and sweeps at the root, both benchmark sets in
+# benchmarks/, the viewer under viewers/ with the server that serves it.
 CONTAINERS = {
     "gem5": {
         "root": "/gem5",

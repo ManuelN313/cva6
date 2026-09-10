@@ -21,7 +21,6 @@ SEARCH_DIRS = [
     "verilator_changes",
 ]
 
-# The viewers keep their own .gitignore, so their own copy of this script.
 # Each viewer has its own .gitignore and its own copy of this tool, named
 # after the repository it acts on so no two scripts in the project share a
 # name. This one only points at them.

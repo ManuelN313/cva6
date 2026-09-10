@@ -142,10 +142,8 @@ def main():
             planned.extend(found)
 
     # The destination is flat, so two sources sharing a basename would leave
-    # only the last one. We rename clashing files to keep every copy, using
-    # the parent directory name as a prefix. If that still clashes, we walk up
-    # the tree until the names are distinct. The depth is limited to avoid a
-    # runaway in case of a very deep tree.
+    # only the last one. A clash takes the parent directory as a prefix and
+    # walks up until the names differ, with a depth limit for deep trees.
     by_name = {}
     for path in planned:
         by_name.setdefault(os.path.basename(path), []).append(path)
